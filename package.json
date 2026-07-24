@@ -19,6 +19,9 @@
     "check": "npm run verify-env && npm run lint && npm run typecheck && npm run test",
     "db:reset": "supabase db reset",
     "db:diff": "supabase db diff",
+    "db:test": "supabase test db",
+    "seed:users": "tsx scripts/seed-demo-users.ts",
+    "docs:dd": "tsx scripts/generate-data-dictionary.ts",
     "check:migrations": "tsx scripts/check-migration-order.ts"
   },
   "dependencies": {

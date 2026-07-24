@@ -20,6 +20,10 @@ enabled = false
 port = 54329
 pool_mode = "transaction"
 
+[db.seed]
+enabled = true
+sql_paths = ["./seed/001_reference_data.sql", "./seed/002_property_fixture.sql", "./seed/003_unit_fixture.sql"]
+
 [studio]
 enabled = true
 port = 54323
