@@ -1,8 +1,10 @@
 import { NextRequest } from "next/server";
 import { dispatch } from "@/lib/api/router";
 import { registerUnitRoutes } from "@/features/units/api";
+import { registerRecommendationRoutes } from "@/features/recommendations/api";
 
 registerUnitRoutes();
+registerRecommendationRoutes();
 
 export const dynamic = "force-dynamic";
 
