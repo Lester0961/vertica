@@ -13,6 +13,10 @@ create extension if not exists "btree_gist";    -- exclusion constraints
 -- --- Schema for internal helpers ---------------------------------------
 create schema if not exists app;
 
+-- anon/authenticated must be able to reference app-schema enum types (used as
+-- column types) and call the SECURITY DEFINER helper functions used in RLS.
+grant usage on schema app to anon, authenticated, service_role;
+
 -- --- Status enums -------------------------------------------------------
 do $$ begin
   create type app.unit_status as enum (

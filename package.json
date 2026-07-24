@@ -20,7 +20,9 @@
     "db:reset": "supabase db reset",
     "db:diff": "supabase db diff",
     "db:test": "supabase test db",
-    "seed:users": "tsx scripts/seed-demo-users.ts",
+    "db:apply": "tsx scripts/db-apply.ts",
+    "db:apply:reset": "tsx scripts/db-apply.ts --reset --seed",
+    "seed:users": "tsx --env-file=.env.local scripts/seed-demo-users.ts",
     "docs:dd": "tsx scripts/generate-data-dictionary.ts",
     "check:migrations": "tsx scripts/check-migration-order.ts"
   },
@@ -35,10 +37,12 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.0",
     "eslint-config-next": "16.2.11",
+    "pg": "^8.22.0",
     "tsx": "^4.20.7",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

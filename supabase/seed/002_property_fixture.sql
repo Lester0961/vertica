@@ -20,9 +20,9 @@ on conflict (id) do nothing;
 -- Unit types
 insert into public.unit_types (id, code, name, bedrooms, bathrooms, base_area_sqm, capacity, default_dues, public_description, min_area_sqm, max_area_sqm, min_rent, max_rent)
 values
-  ('00000000-0000-0000-0000-0000000t0001','STUDIO','Studio',0,1,26.00,2,1500,'Efficient open layout for one or two occupants.',24,30,15000,19000),
-  ('00000000-0000-0000-0000-0000000t0002','1BR','One-Bedroom',1,1,38.00,3,2200,'Defined sleeping area with better work/rest separation.',34,44,22000,28000),
-  ('00000000-0000-0000-0000-0000000t0003','2BR','Two-Bedroom',2,2,58.00,5,3200,'Higher capacity with a dedicated extra room.',52,66,34000,42000)
+  ('00000000-0000-0000-0000-0000000a0001','STUDIO','Studio',0,1,26.00,2,1500,'Efficient open layout for one or two occupants.',24,30,15000,19000),
+  ('00000000-0000-0000-0000-0000000a0002','1BR','One-Bedroom',1,1,38.00,3,2200,'Defined sleeping area with better work/rest separation.',34,44,22000,28000),
+  ('00000000-0000-0000-0000-0000000a0003','2BR','Two-Bedroom',2,2,58.00,5,3200,'Higher capacity with a dedicated extra room.',52,66,34000,42000)
 on conflict (id) do nothing;
 
 -- Floors 2-7
