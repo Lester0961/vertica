@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/amenities", label: "Amenities" },
   { href: "/location", label: "Location" },
   { href: "/recommend", label: "Find My Unit" },
+  { href: "/inquiry", label: "Inquire" },
   { href: "/explore", label: "Explore Building" },
 ];
 
