@@ -2,7 +2,7 @@ import * as React from "react";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   error?: string;
   hint?: string;
 }
@@ -15,9 +15,11 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const hintId = `${inputId}-hint`;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <label htmlFor={inputId} style={{ fontSize: 14, fontWeight: 600 }}>
-          {label}
-        </label>
+        {label ? (
+          <label htmlFor={inputId} style={{ fontSize: 14, fontWeight: 600 }}>
+            {label}
+          </label>
+        ) : null}
         {hint ? (
           <span id={hintId} style={{ fontSize: 13, color: "var(--muted)" }}>
             {hint}

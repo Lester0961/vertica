@@ -40,7 +40,7 @@ export default async function LandingPage() {
             </p>
             <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
               <Link href="/recommend" style={primaryBtn}>Find My Unit</Link>
-              <Link href="/available-units" style={secondaryBtn}>View Available Units</Link>
+              <Link href="/units" style={secondaryBtn}>View Available Units</Link>
             </div>
             <p style={{ fontSize: 14 }}>
               Already a resident or staff member?{" "}
@@ -160,7 +160,7 @@ export default async function LandingPage() {
                     {t.minRent && t.maxRent ? `${formatPeso(t.minRent)}–${formatPeso(t.maxRent)}/mo` : "—"}
                   </div>
                 </div>
-                <Link href="/available-units" style={{ fontSize: 14, fontWeight: 600 }}>
+                <Link href="/units" style={{ fontSize: 14, fontWeight: 600 }}>
                   View available {t.name} units →
                 </Link>
               </div>
