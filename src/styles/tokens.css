@@ -1,0 +1,34 @@
+/* Vertica temporary minimalist black-and-white design tokens.
+   Editorial architectural portfolio + modern software dashboard. */
+:root {
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-inverse: #0b0b0b;
+  --text: #0b0b0b;
+  --text-inverse: #ffffff;
+  --muted: #6f6f6a;
+  --border: #d8d8d2;
+  --border-strong: #a5a59d;
+  --success: #1c6b3c;
+  --warning: #8a5a00;
+  --danger: #9f1d20;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+
+  --shadow-subtle: 0 1px 2px rgb(0 0 0 / 0.06);
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
