@@ -3,10 +3,12 @@ import { dispatch } from "@/lib/api/router";
 import { registerUnitRoutes } from "@/features/units/api";
 import { registerRecommendationRoutes } from "@/features/recommendations/api";
 import { registerCrmRoutes } from "@/features/crm/api";
+import { registerBillingRoutes } from "@/features/billing/api";
 
 registerUnitRoutes();
 registerRecommendationRoutes();
 registerCrmRoutes();
+registerBillingRoutes();
 
 export const dynamic = "force-dynamic";
 
