@@ -10,6 +10,7 @@ const NAV: NavItem[] = [
   { href: "/tenant/payments", label: "Payments" },
   { href: "/tenant/maintenance", label: "Maintenance" },
   { href: "/tenant/gate-passes", label: "Gate passes" },
+  { href: "/tenant/announcements", label: "Announcements" },
   { href: "/tenant/notifications", label: "Notifications" },
   { href: "/tenant/profile", label: "Profile" },
 ];

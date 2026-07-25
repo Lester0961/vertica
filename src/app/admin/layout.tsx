@@ -14,6 +14,7 @@ const NAV: NavItem[] = [
   { href: "/admin/payments", label: "Payments" },
   { href: "/admin/maintenance", label: "Maintenance" },
   { href: "/admin/gate-passes", label: "Gate passes" },
+  { href: "/admin/announcements", label: "Announcements" },
   { href: "/admin/reports", label: "Reports" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/audit-logs", label: "Audit logs" },
