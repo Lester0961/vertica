@@ -4,11 +4,13 @@ import { registerUnitRoutes } from "@/features/units/api";
 import { registerRecommendationRoutes } from "@/features/recommendations/api";
 import { registerCrmRoutes } from "@/features/crm/api";
 import { registerBillingRoutes } from "@/features/billing/api";
+import { registerMaintenanceRoutes } from "@/features/maintenance/api";
 
 registerUnitRoutes();
 registerRecommendationRoutes();
 registerCrmRoutes();
 registerBillingRoutes();
+registerMaintenanceRoutes();
 
 export const dynamic = "force-dynamic";
 
