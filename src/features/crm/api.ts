@@ -33,6 +33,20 @@ async function captureClient(
   return data?.id ?? null;
 }
 
+async function createInquiryRecord(
+  supabase: ReturnType<typeof import("@/lib/supabase/service").createServiceRoleClient>,
+  clientId: string,
+  summary: string | null,
+): Promise<string | null> {
+  const id = randomUUID();
+  const { error } = await supabase.from("inquiries").insert({ id, client_id: clientId, summary, source: "WEB", status: "NEW" });
+  if (error) {
+    console.error("[crm] inquiry insert:", JSON.stringify(error));
+    return null;
+  }
+  return id;
+}
+
 // ---- Inquiries ----------------------------------------------------------
 const inquirySchema = z.object({
   fullName: z.string().min(2).max(120),
@@ -61,15 +75,8 @@ async function inquiryHandler(ctx: ApiContext) {
   const clientId = await captureClient(supabase, fullName, email, phone);
   if (!clientId) return fail("INTERNAL", "Could not save prospect.");
 
-  const id = randomUUID();
-  const { error } = await supabase.from("inquiries").insert({
-    id,
-    client_id: clientId,
-    summary: message ?? null,
-    source: "WEB",
-    status: "NEW",
-  });
-  if (error) return fail("INTERNAL", "Could not save inquiry.");
+  const id = await createInquiryRecord(supabase, clientId, message ?? null);
+  if (!id) return fail("INTERNAL", "Could not save inquiry.");
   if (ids.length) {
     await supabase
       .from("inquiry_units")
@@ -107,11 +114,15 @@ async function viewingHandler(ctx: ApiContext) {
   const supabase = createServiceRoleClient();
   const clientId = await captureClient(supabase, fullName, email, phone);
   if (!clientId) return fail("INTERNAL", "Could not save prospect.");
+  const inquiryId = await createInquiryRecord(supabase, clientId, notes ?? "Viewing request");
+  if (!inquiryId) return fail("INTERNAL", "Could not save viewing inquiry.");
 
   const requestId = randomUUID();
+  const scheduledAt = new Date(`${preferredDate}T${preferredTime || "09:00"}:00`);
+  if (Number.isNaN(scheduledAt.getTime())) return fail("BAD_REQUEST", "Choose a valid viewing date and time.");
   const { error } = await supabase.from("viewing_requests").insert({
     id: requestId,
-    inquiry_id: null,
+    inquiry_id: inquiryId,
     unit_id: ids[0]!,
     preferred_slots: [{ date: preferredDate, time: preferredTime ?? null }],
     status: "REQUESTED",
@@ -122,7 +133,8 @@ async function viewingHandler(ctx: ApiContext) {
   const apptRows = ids.map((unitId) => ({
     request_id: requestId,
     unit_id: unitId,
-    status: "REQUESTED",
+    scheduled_at: scheduledAt.toISOString(),
+    status: "SCHEDULED",
   }));
   await supabase.from("viewing_appointments").insert(apptRows);
   return ok({ requestId });
@@ -183,11 +195,13 @@ async function reservationHandler(ctx: ApiContext) {
   const supabase = createServiceRoleClient();
   const clientId = await captureClient(supabase, fullName, email, phone);
   if (!clientId) return fail("INTERNAL", "Could not save prospect.");
+  const inquiryId = await createInquiryRecord(supabase, clientId, notes ?? `Reservation request for ${unitLabel}`);
+  if (!inquiryId) return fail("INTERNAL", "Could not save reservation inquiry.");
 
   const id = randomUUID();
   const { error } = await supabase.from("reservation_requests").insert({
     id,
-    inquiry_id: null,
+    inquiry_id: inquiryId,
     unit_id: unit.id,
     status: "REQUESTED",
     decision_reason: notes ?? null,

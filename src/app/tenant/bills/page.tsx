@@ -2,6 +2,7 @@ import { requirePageRole } from "@/lib/security/guard";
 import { getMyBills, getMyPayments } from "@/features/billing/queries";
 import { PaymentForm } from "@/components/billing/PaymentForm";
 import { formatPeso } from "@/lib/utils/format";
+import { RealtimeRefresh } from "@/components/realtime/RealtimeRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +10,7 @@ export default async function TenantBillsPage() {
   await requirePageRole(["TENANT"]);
   const [bills, payments] = await Promise.all([getMyBills(), getMyPayments()]);
 
-  const billOptions = bills.map((b) => ({
+  const billOptions = bills.filter((b) => b.balance > 0 && ["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(b.status)).map((b) => ({
     id: b.id,
     label: `${b.periodStart} → ${b.periodEnd}`,
     balance: b.balance,
@@ -17,14 +18,15 @@ export default async function TenantBillsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
+      <RealtimeRefresh tables={["bills", "payments"]} />
       <h1 className="text-2xl font-semibold text-neutral-900">Bills &amp; payments</h1>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_1fr]">
         <section>
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Outstanding bills</h2>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Bills</h2>
           {bills.length === 0 ? (
             <p className="rounded-xl border border-dashed border-neutral-300 p-6 text-neutral-500">
-              No outstanding bills.
+              No bills yet.
             </p>
           ) : (
             <ul className="space-y-2">
@@ -47,6 +49,9 @@ export default async function TenantBillsPage() {
                       ))}
                     </ul>
                   )}
+                  <a href={`/api/v1/billing/me/bills/${b.id}/invoice`} download className="mt-3 inline-flex text-sm font-semibold text-emerald-800 underline">
+                    Download invoice (PDF)
+                  </a>
                 </li>
               ))}
             </ul>

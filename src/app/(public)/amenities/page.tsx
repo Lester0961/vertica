@@ -1,15 +1,4 @@
 import type { Metadata } from "next";
-import { PublicPagePlaceholder } from "@/components/layout/PublicPagePlaceholder";
-
 export const metadata: Metadata = { title: "Amenities" };
-
-export default function AmenitiesPage() {
-  return (
-    <PublicPagePlaceholder
-      eyebrow="Designed for everyday ease"
-      title="Amenities"
-      description="Arrival and security, wellness, fitness, community spaces, and landscaped outdoor areas. Amenity content is pending approval against the fictional project brief (see VERIFY.md)."
-      phase="Phase 4/13 (content + media)"
-    />
-  );
-}
+const amenities = [{ title: "Arrival and security", body: "A staffed arrival point and managed visitor access support a clear, dependable entry experience." }, { title: "Shared spaces", body: "Common areas are intended for quiet daily use, short meetings, and small community moments." }, { title: "Wellness", body: "Dedicated areas support movement and time outdoors without overwhelming the residential setting." }, { title: "Resident services", body: "Announcements, service requests, bills, and visitor passes are handled through the resident portal." }];
+export default function AmenitiesPage() { return <main className="page-shell"><header className="page-header"><p className="eyebrow">Everyday spaces</p><h1>Amenities with a purpose</h1><p>Vertica keeps the shared experience practical: clear arrival, well-managed common spaces, and resident services that work without unnecessary friction.</p></header><div className="grid gap-4 sm:grid-cols-2">{amenities.map((amenity, index) => <article className="surface-card p-6" key={amenity.title}><p className="eyebrow">0{index + 1}</p><h2 className="mt-4 text-xl font-bold">{amenity.title}</h2><p className="mt-2 text-sm leading-6 text-neutral-600">{amenity.body}</p></article>)}</div></main>; }

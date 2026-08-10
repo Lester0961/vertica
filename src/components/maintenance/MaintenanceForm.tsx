@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/design-system/Input";
 
 export function MaintenanceForm() {
+  const router = useRouter();
   const [category, setCategory] = useState("PLUMBING");
-  const [priority, setPriority] = useState("MEDIUM");
+  const [priority, setPriority] = useState("NORMAL");
   const [description, setDescription] = useState("");
   const [isSafety, setIsSafety] = useState(false);
   const [date, setDate] = useState("");
@@ -35,6 +37,7 @@ export function MaintenanceForm() {
       if (!res.ok || json.status !== "SUCCESS") throw new Error(json.message ?? "Submission failed.");
       setDone("Request submitted — reference " + (json.data.requestId ?? "").slice(0, 8));
       setDescription("");
+      router.refresh();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -74,9 +77,9 @@ export function MaintenanceForm() {
             onChange={(e) => setPriority(e.target.value)}
           >
             <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
+            <option value="NORMAL">Normal</option>
             <option value="HIGH">High</option>
-            <option value="URGENT">Urgent</option>
+            <option value="EMERGENCY">Emergency</option>
          </select>
        </label>
      </div>

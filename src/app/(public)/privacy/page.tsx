@@ -1,15 +1,4 @@
 import type { Metadata } from "next";
-import { PublicPagePlaceholder } from "@/components/layout/PublicPagePlaceholder";
-
 export const metadata: Metadata = { title: "Privacy" };
-
-export default function PrivacyPage() {
-  return (
-    <PublicPagePlaceholder
-      eyebrow="Your data"
-      title="Privacy notice"
-      description="Vertica collects only the information needed to process inquiries, recommendations, and resident services. The production privacy notice wording is versioned and pending approval before release (see VERIFY.md)."
-      phase="Legal verification (VERIFY.md)"
-    />
-  );
-}
+export default function PrivacyPage() { return <main className="page-shell"><header className="page-header"><p className="eyebrow">Privacy notice</p><h1>Data used only for the service you request</h1><p>Vertica is an academic prototype. This notice explains the interface’s intended data handling and is not a substitute for a production-approved privacy policy.</p></header><div className="surface-card divide-y divide-neutral-200"><Notice title="What we collect">Contact details supplied in an inquiry, viewing, or reservation request; resident account information; and the records needed to operate tenancy, billing, maintenance, and visitor access.</Notice><Notice title="Why we use it">To process the selected request, operate the property-management workflows, maintain audit records, and communicate relevant service information.</Notice><Notice title="Visitor access">A gate-pass code is displayed only when it is created. The server stores a cryptographic hash, rather than the raw code, for verification.</Notice><Notice title="Your choices">Residents can review and update their profile details in the resident portal. Contact the property office for records that cannot be changed in the interface.</Notice></div></main>; }
+function Notice({ title, children }: { title: string; children: React.ReactNode }) { return <section className="p-6"><h2 className="text-base font-bold">{title}</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-neutral-600">{children}</p></section>; }

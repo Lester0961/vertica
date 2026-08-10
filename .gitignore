@@ -47,3 +47,6 @@ VERIFY.md
 # temp files
 *.tmp
 leasetest.tmp.cjs
+
+/.vercel/
+/artifacts/

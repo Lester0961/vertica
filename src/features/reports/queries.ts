@@ -80,16 +80,16 @@ export async function getOccupancyReport(): Promise<OccupancyReport> {
 export async function getFinancialReport(): Promise<FinancialReport> {
   const supabase = await requireAdmin();
   const { data: bills } = await supabase
-    .from("bills").select("id, total_amount, paid_amount, balance, status, period_start, due_date");
+    .from("bills").select("id, total_amount, paid_amount, balance, accounting_status, period_start, due_date");
   const rows = (bills ?? []) as unknown as {
     id: string; total_amount: number; paid_amount: number; balance: number;
-    status: string; period_start: string; due_date: string;
+    accounting_status: string; period_start: string; due_date: string;
   }[];
   const totalBilled = rows.reduce((s, r) => s + (r.total_amount ?? 0), 0);
   const totalCollected = rows.reduce((s, r) => s + (r.paid_amount ?? 0), 0);
   const totalOutstanding = rows.reduce((s, r) => s + (r.balance ?? 0), 0);
   const collectionRate = totalBilled > 0 ? Math.round((totalCollected / totalBilled) * 10000) / 100 : 0;
-  const overdue = rows.filter((r) => r.status === "OVERDUE" || (r.balance > 0 && new Date(r.due_date) < new Date()));
+  const overdue = rows.filter((r) => r.accounting_status === "OVERDUE" || (r.balance > 0 && new Date(r.due_date) < new Date()));
   const overdueCount = overdue.length;
   const overdueAmount = overdue.reduce((s, r) => s + (r.balance ?? 0), 0);
   const monthMap = new Map<string, { billed: number; collected: number }>();

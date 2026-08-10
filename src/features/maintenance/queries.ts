@@ -9,7 +9,7 @@ async function resolveTenantId(actor: Actor): Promise<string> {
   const { data: profile } = await supabase
     .from("profiles")
     .select("id")
-    .eq("user_id", actor.userId)
+    .eq("id", actor.userId)
     .maybeSingle();
   if (!profile) throw new AuthorizationError(403, "No resident profile linked to this account.");
   const { data: tenant } = await supabase
@@ -54,7 +54,7 @@ export async function getMyMaintenanceRequests(): Promise<MaintenanceRequestView
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("maintenance_requests")
-    .select("id, category, priority, description, status, is_safety, created_at, closed_at, resolution")
+    .select("id, unit_id, tenant_id, category, priority, description, status, is_safety, created_at, closed_at, resolution")
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
   return (data ?? []).map((r: { id: string; category: string; priority: string; description: string; status: string; is_safety: boolean; created_at: string; closed_at: string | null; resolution: string | null }) => ({
@@ -112,7 +112,7 @@ export async function getAllMaintenanceRequests(): Promise<(MaintenanceRequestVi
   const supabase = createServiceRoleClient();
   const { data } = await supabase
     .from("maintenance_requests")
-    .select("id, category, priority, description, status, is_safety, created_at, closed_at, resolution")
+    .select("id, unit_id, tenant_id, category, priority, description, status, is_safety, created_at, closed_at, resolution")
     .order("created_at", { ascending: false });
   const rows = (data ?? []) as unknown as Array<{
     id: string;
@@ -158,4 +158,58 @@ export async function getAllMaintenanceRequests(): Promise<(MaintenanceRequestVi
     unitLabel: unitMap.get(r.unit_id) ?? "?",
     tenantName: r.tenant_id ? clientMap.get(tenantClientMap.get(r.tenant_id) ?? "") ?? null : null,
   }));
+}
+
+export type MaintenanceNextStatus =
+  | "TRIAGED"
+  | "ASSIGNED"
+  | "SCHEDULED"
+  | "IN_PROGRESS"
+  | "ON_HOLD"
+  | "COMPLETED"
+  | "CLOSED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export async function updateMaintenanceStatus(
+  requestId: string,
+  nextStatus: MaintenanceNextStatus,
+  reason: string,
+): Promise<{ id: string; status: string; resolution: string | null; closedAt: string | null }> {
+  const actor = await authenticate();
+  if (!actor?.roles.some((role) => role === "SUPER_ADMIN" || role === "PROPERTY_ADMIN" || role === "MAINTENANCE")) {
+    throw new AuthorizationError(403, "Staff access only.");
+  }
+  const supabase = createServiceRoleClient();
+  const { data: request } = await supabase
+    .from("maintenance_requests")
+    .select("id, status, status_version")
+    .eq("id", requestId)
+    .maybeSingle();
+  if (!request) throw new Error("Maintenance request not found.");
+  if (["CLOSED", "REJECTED", "CANCELLED"].includes(request.status)) {
+    throw new Error("A closed request cannot be changed.");
+  }
+
+  const terminal = ["COMPLETED", "CLOSED", "REJECTED", "CANCELLED"].includes(nextStatus);
+  const closedAt = terminal ? new Date().toISOString() : null;
+  const resolution = terminal ? reason : null;
+  const { data: updated, error } = await supabase
+    .from("maintenance_requests")
+    .update({ status: nextStatus, status_version: request.status_version + 1, resolution, closed_at: closedAt })
+    .eq("id", requestId)
+    .eq("status_version", request.status_version)
+    .select("id, status, resolution, closed_at")
+    .maybeSingle();
+  if (error || !updated) throw new Error("Request changed elsewhere. Refresh and try again.");
+
+  const { error: historyError } = await supabase.from("maintenance_status_history").insert({
+    request_id: requestId,
+    previous_status: request.status,
+    next_status: nextStatus,
+    actor_id: actor.userId,
+    reason,
+  });
+  if (historyError) throw new Error("Status changed, but its history could not be recorded.");
+  return { id: updated.id, status: updated.status, resolution: updated.resolution, closedAt: updated.closed_at };
 }

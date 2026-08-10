@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { LogoutButton } from "@/components/layout/LogoutButton";
 
 export interface NavItem {
@@ -17,80 +21,45 @@ export function PortalShell({
   email: string | null;
   children: React.ReactNode;
 }) {
-  return (
-    <div style={{ display: "flex", minHeight: "100dvh", background: "var(--bg)" }}>
-      <aside
-        style={{
-          width: 256,
-          flexShrink: 0,
-          borderRight: "1px solid var(--border)",
-          background: "var(--surface)",
-          padding: "var(--space-5)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-5)",
-          position: "sticky",
-          top: 0,
-          height: "100dvh",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            fontWeight: 700,
-            fontSize: 18,
-            textDecoration: "none",
-          }}
-        >
-          VERTICA
-          <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--text)" }} />
-        </Link>
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-        <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
-            {title}
-          </span>
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                padding: "8px 10px",
-                borderRadius: "var(--radius-sm)",
-                textDecoration: "none",
-                fontSize: 14,
-                color: "var(--text)",
-              }}
-            >
-              {item.label}
-            </Link>
-          ))}
+  return (
+    <div className="portal-shell">
+      <aside className={mobileOpen ? "portal-sidebar portal-sidebar--open" : "portal-sidebar"}>
+        <div className="portal-sidebar-head">
+          <Link href="/" className="brand-mark" aria-label="Vertica home">
+            <span>VERTICA</span><i aria-hidden />
+          </Link>
+          <button type="button" className="portal-menu-button" aria-expanded={mobileOpen} aria-controls="portal-navigation" onClick={() => setMobileOpen((open) => !open)}>
+            {mobileOpen ? "Close menu" : "Open menu"}
+          </button>
+        </div>
+
+        <nav id="portal-navigation" className="portal-nav" aria-label={`${title} navigation`}>
+          <span className="portal-nav-label">{title}</span>
+          {nav.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} className={active ? "portal-nav-link portal-nav-link--active" : "portal-nav-link"}>
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
-          <span style={{ fontSize: 12, color: "var(--muted)", wordBreak: "break-all" }}>{email}</span>
+        <div className="portal-account">
+          <span title={email ?? undefined}>{email ?? "Signed-in account"}</span>
           <LogoutButton />
         </div>
       </aside>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <header
-          style={{
-            height: 64,
-            borderBottom: "1px solid var(--border)",
-            background: "var(--surface)",
-            display: "flex",
-            alignItems: "center",
-            padding: "0 var(--space-6)",
-            fontWeight: 600,
-          }}
-        >
-          {title}
+      <div className="portal-content">
+        <header className="portal-topbar">
+          <span>{title}</span>
+          <span className="portal-topbar-account">{email ?? "Signed-in account"}</span>
         </header>
-        <main style={{ padding: "var(--space-6)", flex: 1 }}>{children}</main>
+        <main>{children}</main>
       </div>
     </div>
   );

@@ -110,7 +110,7 @@ export async function getMyProfile(): Promise<UserProfile> {
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, email, display_name, phone, status, created_at")
-    .eq("user_id", actor.userId)
+    .eq("id", actor.userId)
     .single();
   if (!profile) throw new Error("Profile not found.");
   const p = profile as unknown as {
@@ -143,7 +143,7 @@ export async function updateMyProfile(input: { displayName?: string; phone?: str
   const { error } = await supabase
     .from("profiles")
     .update(updates)
-    .eq("user_id", actor.userId);
+    .eq("id", actor.userId);
   if (error) throw new Error("Could not update profile.");
 }
 
@@ -152,7 +152,7 @@ export async function getMyNotifications(): Promise<NotificationEntry[]> {
   if (!actor) throw new AuthorizationError(401, "Not authenticated.");
   const supabase = createServiceRoleClient();
   const { data: profile } = await supabase
-    .from("profiles").select("id").eq("user_id", actor.userId).single();
+    .from("profiles").select("id").eq("id", actor.userId).single();
   if (!profile) return [];
   const { data } = await supabase
     .from("notifications")
@@ -180,7 +180,7 @@ export async function markNotificationRead(id: string): Promise<void> {
   if (!actor) throw new AuthorizationError(401, "Not authenticated.");
   const supabase = createServiceRoleClient();
   const { data: profile } = await supabase
-    .from("profiles").select("id").eq("user_id", actor.userId).single();
+    .from("profiles").select("id").eq("id", actor.userId).single();
   if (!profile) return;
   await supabase
     .from("notifications")

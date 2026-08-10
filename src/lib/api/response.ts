@@ -35,7 +35,9 @@ function meta(id = requestId()) {
 
 export function ok<T>(data: T, init?: { status?: number; requestId?: string }) {
   return NextResponse.json(
-    { data, meta: meta(init?.requestId) },
+    // `ok` and `status` keep the envelope easy to consume from browser forms,
+    // while `data` and `error` remain the stable v2 contract.
+    { ok: true, status: "SUCCESS", data, meta: meta(init?.requestId) },
     { status: init?.status ?? 200, headers: { "Cache-Control": "private, no-store" } },
   );
 }
@@ -47,7 +49,7 @@ export function fail(
   reqId?: string,
 ) {
   return NextResponse.json(
-    { error: { code, message, details: details ?? {} }, meta: meta(reqId) },
+    { ok: false, status: "ERROR", message, error: { code, message, details: details ?? {} }, meta: meta(reqId) },
     { status: STATUS_BY_CODE[code], headers: { "Cache-Control": "private, no-store" } },
   );
 }

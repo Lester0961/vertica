@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatPeso, formatArea } from "@/lib/utils/format";
 import type { UnitDetail } from "@/features/units/queries";
+import { UnitInterior3D } from "@/components/units/UnitInterior3D";
 
 function featureValue(f: UnitDetail["features"][number]): string {
   if (f.valueBoolean !== null) return f.valueBoolean ? "Yes" : "No";
@@ -12,6 +13,7 @@ function featureValue(f: UnitDetail["features"][number]): string {
 export function UnitDetailCard({ unit }: { unit: UnitDetail }) {
   return (
     <article className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <div className="mb-6"><UnitInterior3D bedrooms={unit.bedrooms} label={unit.publicLabel} /><p className="mt-2 text-xs text-neutral-500">Concept visualization for presentation. Furniture and partitions are illustrative; unit data below is database-backed.</p></div>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-2xl font-semibold text-neutral-900">{unit.publicLabel}</h1>
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">

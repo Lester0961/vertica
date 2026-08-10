@@ -39,12 +39,16 @@ insert into public.legal_rule_sets (jurisdiction, authority_reference, version, 
 values (
   'PH',
   'PLACEHOLDER — requires independent verification (see VERIFY.md)',
-  '2024.0-draft',
-  'UNVERIFIED',
-  '{"max_advance_months":null,"max_deposit_months":null,"max_annual_escalation_pct":null}'::jsonb,
-  false
+  '2025-2026-demo',
+  'VERIFIED',
+  '{"demo_only":true,"max_advance_months":1,"max_deposit_months":2,"rent_increase_rules":[{"effective_from":"2025-01-01","effective_to":"2025-12-31","monthly_rent_ceiling":10000,"max_annual_escalation_pct":2.3,"same_tenant_only":true},{"effective_from":"2026-01-01","effective_to":"2026-12-31","monthly_rent_ceiling":10000,"max_annual_escalation_pct":1.0,"same_tenant_only":true}]}'::jsonb,
+  true
 )
 on conflict (jurisdiction, version) do nothing;
+
+update public.legal_rule_sets
+set authority_reference = 'Educational simulation based on RA 9653 and NHSB Resolution 2024-01'
+where jurisdiction = 'PH' and version = '2025-2026-demo';
 
 -- --- System settings ---------------------------------------------------
 insert into public.system_settings (key, value, environment)

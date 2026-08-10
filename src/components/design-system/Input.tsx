@@ -40,9 +40,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             padding: "10px 12px",
             borderRadius: "var(--radius-sm)",
             border: `1px solid ${error ? "var(--danger)" : "var(--border-strong)"}`,
-            background: "var(--surface)",
+            background: "var(--surface-elevated)",
             color: "var(--text)",
             fontSize: 15,
+            outline: "none",
             ...style,
           }}
         />

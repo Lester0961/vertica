@@ -7,7 +7,7 @@ export default function PublicLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
+    <div className="public-layout" style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
       <PublicHeader />
       <div style={{ flex: 1 }}>{children}</div>
       <PublicFooter />

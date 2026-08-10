@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/design-system/Input";
 
 interface BillOption {
@@ -10,6 +11,7 @@ interface BillOption {
 }
 
 export function PaymentForm({ bills }: { bills: BillOption[] }) {
+  const router = useRouter();
   const [billId, setBillId] = useState(bills[0]?.id ?? "");
   const [amount, setAmount] = useState(bills[0]?.balance ? String(bills[0].balance) : "");
   const [method, setMethod] = useState("BANK_TRANSFER");
@@ -37,6 +39,7 @@ export function PaymentForm({ bills }: { bills: BillOption[] }) {
       const json = await res.json();
       if (!res.ok || json.status !== "SUCCESS") throw new Error(json.message ?? "Submission failed.");
       setDone("Payment submitted for review. Reference: " + (json.data.paymentId ?? "").slice(0, 8));
+      router.refresh();
     } catch (e) {
       setError((e as Error).message);
     } finally {

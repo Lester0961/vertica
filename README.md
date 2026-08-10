@@ -9,7 +9,7 @@ A modern, full-stack property management platform built for condominium administ
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green?logo=supabase)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-blue?logo=tailwindcss)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-blue?logo=tailwindcss)
 
 </div>
 
@@ -18,6 +18,24 @@ A modern, full-stack property management platform built for condominium administ
 ## Overview
 
 Vertica is a comprehensive property management system designed for condominium buildings. It provides role-based portals for administrators, tenants, security guards, and maintenance staff — all powered by a modern Next.js stack with Supabase PostgreSQL for the database and authentication.
+
+## Product Preview
+
+### Public Experience
+
+![Vertica public landing page](artifacts/browser/deployed-landing.png)
+
+### Mobile Authentication
+
+![Vertica mobile login](artifacts/browser/login-mobile.png)
+
+### Admin 3D Unit Management
+
+![Vertica admin 3D building and unit management](artifacts/browser/admin-units-3d.png)
+
+### Guard Access History
+
+![Vertica guard access history](artifacts/browser/guard-access-log.png)
 
 ## Features
 
@@ -66,7 +84,7 @@ Vertica is a comprehensive property management system designed for condominium b
 | Language | TypeScript 5 |
 | Database | Supabase PostgreSQL (hosted) |
 | Auth | Supabase Auth (JWT, RLS) |
-| Styling | Tailwind CSS 3.4 |
+| Styling | Tailwind CSS 4 |
 | Validation | Zod |
 | Testing | Vitest (pgTAP for DB) |
 | CI | GitHub Actions |
@@ -117,9 +135,21 @@ npm run dev
 |----------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
+| `NEXT_PUBLIC_SITE_URL` | Canonical application URL used for auth redirects |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
+| `APP_TIMEZONE` | IANA timezone used for property operations (default: `Asia/Manila`) |
 | `DIRECT_URL` | Direct database connection (port 5432) |
 | `DATABASE_URL` | Pooled database connection |
+
+### Production Topology
+
+- **Vercel** hosts the Next.js application and its server/API routes.
+- **Supabase** provides PostgreSQL, Auth, Storage, and row-level security.
+- **Brevo or Supabase Auth email** can send transactional messages on a free school-demo setup.
+
+No separate Render service is required for the current architecture: the repository contains one full-stack Next.js application, and its API routes run with the Vercel deployment. Add a Render service only if a long-running worker or independently deployed backend is introduced later.
+
+For the free presentation deployment, keep the Vercel-provided URL and use either Supabase's built-in Auth mailer or a verified Brevo single sender with `smtp-relay.brevo.com` on port `587`. No purchased domain is required for the classroom demo. Keep the SMTP key only in Supabase and never expose it through a `NEXT_PUBLIC_` variable. Free-provider rate limits still apply.
 
 ### Demo Accounts
 

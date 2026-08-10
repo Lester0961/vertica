@@ -79,6 +79,11 @@ export function ContactForm({ kind, unitLabel }: { kind: CrmKind; unitLabel?: st
       }}
     >
       <h2 className="text-lg font-semibold text-neutral-900">{COPY[kind].title}</h2>
+      {unitLabel && kind === "inquiry" && (
+        <p className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
+          Regarding <span className="font-semibold">{unitLabel}</span>
+        </p>
+      )}
       <Input label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
       <div className="grid grid-cols-2 gap-3">
         <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />

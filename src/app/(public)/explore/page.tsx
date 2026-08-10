@@ -1,15 +1,4 @@
 import type { Metadata } from "next";
-import { PublicPagePlaceholder } from "@/components/layout/PublicPagePlaceholder";
-
-export const metadata: Metadata = { title: "Explore building" };
-
-export default function ExplorePage() {
-  return (
-    <PublicPagePlaceholder
-      eyebrow="Interactive building"
-      title="Explore the building"
-      description="A lightweight building explorer with a floor selector and highlighted available units. The public viewer shows only Available / Not available and never reveals protected occupancy details."
-      phase="Phase 13 (3D and 360)"
-    />
-  );
-}
+import { AvailabilityExplorer } from "@/components/units/AvailabilityExplorer";
+export const metadata: Metadata = { title: "Explore availability" };
+export default function ExplorePage() { return <main className="page-shell"><header className="page-header"><p className="eyebrow">Building explorer</p><h1>Explore available residences</h1><p>Use the floor map to compare currently available homes. Occupancy details are protected and are never displayed in this public view.</p></header><AvailabilityExplorer /></main>; }

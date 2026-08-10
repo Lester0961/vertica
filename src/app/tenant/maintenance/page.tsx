@@ -1,6 +1,7 @@
 import { requirePageRole } from "@/lib/security/guard";
 import { getMyMaintenanceRequests } from "@/features/maintenance/queries";
 import { MaintenanceForm } from "@/components/maintenance/MaintenanceForm";
+import { RealtimeRefresh } from "@/components/realtime/RealtimeRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +11,7 @@ export default async function TenantMaintenancePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
+      <RealtimeRefresh tables={["maintenance_requests"]} />
       <h1 className="text-2xl font-semibold text-neutral-900">Maintenance</h1>
       <p className="mt-1 text-neutral-600">
         Submit a request and our maintenance team will respond. Safety issues are flagged
@@ -34,7 +36,7 @@ export default async function TenantMaintenancePage() {
                    </span>
                  </div>
                   <p className="mt-1 text-sm text-neutral-600">
-                    {r.priority} priority{r.isSafety ? " · ⚠ safety" : ""}
+                    {r.priority} priority{r.isSafety ? " · Safety issue" : ""}
                  </p>
                   <p className="mt-1 text-sm text-neutral-500">{r.description}</p>
                   <p className="mt-1 text-xs text-neutral-400">

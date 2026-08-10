@@ -82,6 +82,39 @@ async function main() {
       { onConflict: "user_id,role" },
     );
 
+    // Tenant-facing APIs resolve ownership through tenants.profile_id. Keep the
+    // demo resident usable after a fresh seed instead of creating an Auth-only
+    // identity that can sign in but cannot access lease, billing, maintenance,
+    // or gate-pass data.
+    if (u.role === "TENANT") {
+      const { data: existingTenant } = await admin
+        .from("tenants")
+        .select("id")
+        .eq("profile_id", userId!)
+        .maybeSingle();
+
+      if (!existingTenant) {
+        const { data: numberedTenant } = await admin
+          .from("tenants")
+          .select("id")
+          .eq("tenant_number", "T-DEMO-001")
+          .maybeSingle();
+
+        if (numberedTenant) {
+          await admin
+            .from("tenants")
+            .update({ profile_id: userId!, status: "ACTIVE" })
+            .eq("id", numberedTenant.id);
+        } else {
+          await admin.from("tenants").insert({
+            profile_id: userId!,
+            tenant_number: "T-DEMO-001",
+            status: "ACTIVE",
+          });
+        }
+      }
+    }
+
     console.log(`Seeded ${u.role.padEnd(15)} ${u.email}`);
   }
 

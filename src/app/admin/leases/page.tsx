@@ -1,63 +1,20 @@
-"use client";
+import { CreateLeaseForm } from "@/components/staff/CreateLeaseForm";
+import { LeaseManager } from "@/components/staff/LeaseManager";
+import { getActiveLeases, getAvailableUnitsForLease, getLegalConfigurationStatus } from "@/features/staff/queries";
+import { requirePageRole } from "@/lib/security/guard";
+import { RealtimeRefresh } from "@/components/realtime/RealtimeRefresh";
 
-import { useEffect, useState } from "react";
+export const dynamic = "force-dynamic";
 
-interface Lease {
-  id: string;
-  unitLabel: string;
-  tenantName: string;
-  status: string;
-  startDate: string;
-  endDate: string;
-  monthlyRent: number;
-}
-
-export default function AdminLeasesPage() {
-  const [leases, setLeases] = useState<Lease[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/v1/leases/active")
-      .then((r) => r.json())
-      .then((json) => { if (!cancelled && json.ok) setLeases(json.data.leases ?? []); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
-
-  return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-neutral-900">Active Leases</h1>
-      {loading && <p className="text-sm text-neutral-500">Loading...</p>}
-      {!loading && leases.length === 0 && <p className="text-sm text-neutral-500">No active leases.</p>}
-      {!loading && leases.length > 0 && (
-        <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-neutral-100 bg-neutral-50">
-              <tr>
-                <th className="px-4 py-2 font-medium text-neutral-600">Unit</th>
-                <th className="px-4 py-2 font-medium text-neutral-600">Tenant</th>
-                <th className="px-4 py-2 font-medium text-neutral-600">Status</th>
-                <th className="px-4 py-2 font-medium text-neutral-600">Period</th>
-                <th className="px-4 py-2 font-medium text-neutral-600">Rent</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {leases.map((l) => (
-                <tr key={l.id}>
-                  <td className="px-4 py-2 font-medium text-neutral-900">{l.unitLabel}</td>
-                  <td className="px-4 py-2 text-neutral-600">{l.tenantName ?? "—"}</td>
-                  <td className="px-4 py-2">
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">{l.status}</span>
-                  </td>
-                  <td className="px-4 py-2 text-neutral-500">{new Date(l.startDate).toLocaleDateString()} – {new Date(l.endDate).toLocaleDateString()}</td>
-                  <td className="px-4 py-2 text-neutral-600">₱{l.monthlyRent?.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
+export default async function AdminLeasesPage() {
+  await requirePageRole(["SUPER_ADMIN", "PROPERTY_ADMIN"], "/admin/leases");
+  const [leases, units, legal] = await Promise.all([getActiveLeases(), getAvailableUnitsForLease(), getLegalConfigurationStatus()]);
+  return <div className="page-shell space-y-8">
+    <RealtimeRefresh tables={["units"]} />
+    <header className="page-header"><p className="eyebrow">Residency</p><h1>Lease management</h1><p>Create, renew, and close agreements with effective-dated demo policy checks.</p></header>
+    <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950" role="note"><strong>Educational simulation.</strong> Lease amounts are checked against the active classroom demo ruleset ({legal.version ?? "not configured"}). This feature is for system demonstration, not professional advice.</div>
+    {!legal.ready && <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" role="alert"><strong>Lease creation is temporarily unavailable.</strong> Activate the seeded demo policy configuration to use this workflow.</div>}
+    <CreateLeaseForm units={units} legalReady={legal.ready} />
+    <section aria-labelledby="active-leases-title"><h2 id="active-leases-title" className="mb-3 text-lg font-bold">Active leases</h2><LeaseManager leases={leases} /></section>
+  </div>;
 }

@@ -8,7 +8,7 @@ const FAQS: { q: string; a: string }[] = [
   { q: "How does the recommendation system work?", a: "It removes units that fail your non-negotiables first, then ranks the rest with a reproducible weighted score and shows why each unit placed where it did." },
   { q: "Can I request a physical viewing?", a: "Yes. After an inquiry you can request a viewing; an administrator confirms a schedule." },
   { q: "How long does a reservation hold last?", a: "Reservation holds have a fixed expiry set by the property. Expired holds are released automatically." },
-  { q: "How is my inquiry information used?", a: "Only to process your inquiry and follow up. See the Privacy page; production privacy wording is pending approval." },
+  { q: "How is my inquiry information used?", a: "Only to process your inquiry and follow up. See the Privacy page for the project’s intended data-handling approach." },
 ];
 
 export default function FaqPage() {

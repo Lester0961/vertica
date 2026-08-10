@@ -3,7 +3,13 @@ import { ContactForm } from "@/components/crm/ContactForm";
 
 export const metadata: Metadata = { title: "Inquire" };
 
-export default function InquiryPage() {
+export default async function InquiryPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const unitLabel = typeof params.unitLabel === "string" ? decodeURIComponent(params.unitLabel) : undefined;
   return (
     <main className="mx-auto max-w-2xl px-4 py-10">
       <header className="mb-6">
@@ -14,7 +20,7 @@ export default function InquiryPage() {
           viewing directly.
         </p>
       </header>
-      <ContactForm kind="inquiry" />
+      <ContactForm kind="inquiry" unitLabel={unitLabel} />
     </main>
   );
 }

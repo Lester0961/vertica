@@ -1,15 +1,3 @@
 import type { Metadata } from "next";
-import { PublicPagePlaceholder } from "@/components/layout/PublicPagePlaceholder";
-
 export const metadata: Metadata = { title: "Location" };
-
-export default function LocationPage() {
-  return (
-    <PublicPagePlaceholder
-      eyebrow="Connected to your day"
-      title="Location"
-      description="Map, property address, and nearby establishments. Distances must come from a verified dataset and state whether they are road distance, straight-line, or estimated travel time (see VERIFY.md)."
-      phase="Phase 4 (landing content)"
-    />
-  );
-}
+export default function LocationPage() { return <main className="page-shell"><header className="page-header"><p className="eyebrow">A considered setting</p><h1>Designed around daily routines</h1><p>Vertica is a fictional academic property-management project. Location information is intentionally presented as a planning context, not as a claim about a real development or an affiliated brand.</p></header><section className="surface-card grid gap-8 p-7 md:grid-cols-[1fr_.9fr]"><div><h2 className="text-xl font-bold">A practical home base</h2><p className="mt-3 max-w-prose leading-7 text-neutral-600">The property concept emphasizes predictable access, manageable commutes, and nearby essentials. Unit comparison tools make the trade-offs clear before an inquiry is submitted.</p></div><dl className="grid gap-5 text-sm"><div><dt className="eyebrow">Property type</dt><dd className="mt-1 font-semibold">Single 24-unit condominium building</dd></div><div><dt className="eyebrow">Reference context</dt><dd className="mt-1 font-semibold">Philippine condominium market study</dd></div><div><dt className="eyebrow">Affiliation</dt><dd className="mt-1 font-semibold">Independent academic prototype</dd></div></dl></section></main>; }

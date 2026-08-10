@@ -1,15 +1,3 @@
 import type { Metadata } from "next";
-import { PublicPagePlaceholder } from "@/components/layout/PublicPagePlaceholder";
-
 export const metadata: Metadata = { title: "Terms" };
-
-export default function TermsPage() {
-  return (
-    <PublicPagePlaceholder
-      eyebrow="Terms of use"
-      title="Terms"
-      description="This is a fictional academic project. All figures, images, distances, and claims are synthetic and provided for demonstration only. Final terms are pending approval."
-      phase="Legal verification (VERIFY.md)"
-    />
-  );
-}
+export default function TermsPage() { return <main className="page-shell"><header className="page-header"><p className="eyebrow">Project terms</p><h1>Academic prototype</h1><p>Vertica is a thesis/capstone demonstration for a single fictional condominium building. It is unaffiliated with SMDC or any real property developer.</p></header><div className="surface-card p-7"><ul className="grid gap-5 text-sm leading-6 text-neutral-700"><li><strong>Illustrative content.</strong> Property information, unit data, and operational workflows are provided for demonstration and evaluation.</li><li><strong>No binding transaction.</strong> An inquiry, viewing request, recommendation, or reservation request does not create a binding lease or payment obligation.</li><li><strong>Human review.</strong> Staff remain responsible for approving leases, payments, access, and maintenance decisions.</li><li><strong>Availability.</strong> The public catalogue reflects the system state available at the time of viewing and may change before any request is reviewed.</li></ul></div></main>; }

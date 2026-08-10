@@ -23,7 +23,7 @@ interface GatePass {
 
 interface UnitOption {
   id: string;
-  public_label: string;
+  publicLabel: string;
 }
 
 export default function TenantGatePassesPage() {
@@ -45,14 +45,21 @@ export default function TenantGatePassesPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/v1/gate-passes/mine").then((r) => r.json()),
-      fetch("/api/v1/public/units").then((r) => r.json()),
-    ]).then(([gpJson, uJson]) => {
+      fetch("/api/v1/leases/me").then((r) => r.json()),
+    ]).then(([gpJson, leaseJson]) => {
       if (gpJson.ok) setPasses(gpJson.data.passes ?? []);
-      if (uJson.ok) setUnits(uJson.data.units ?? []);
+      const lease = leaseJson.ok ? leaseJson.data.lease : null;
+      if (lease?.unitId) {
+        const leasedUnit = { id: lease.unitId, publicLabel: lease.publicLabel };
+        setUnits([leasedUnit]);
+        setForm((current) => ({ ...current, unitId: leasedUnit.id }));
+      }
     }).finally(() => setLoading(false));
   }, []);
 
-  async function handleCreate() {
+  async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
     setSubmitting(true);
     setError(null);
     try {
@@ -60,10 +67,10 @@ export default function TenantGatePassesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          unitId: form.unitId,
-          validFrom: form.validFrom,
-          validTo: form.validTo,
-          maxUses: parseInt(form.maxUses) || 1,
+          unitId: String(data.get("unitId") ?? ""),
+          validFrom: String(data.get("validFrom") ?? ""),
+          validTo: String(data.get("validTo") ?? ""),
+          maxUses: parseInt(String(data.get("maxUses") ?? "1")) || 1,
           visitors: form.visitors.filter((v) => v.visitorName.trim()),
         }),
       });
@@ -74,7 +81,7 @@ export default function TenantGatePassesPage() {
       }
       setNewCode(json.data.code);
       setShowCreate(false);
-      setForm({ unitId: "", validFrom: "", validTo: "", maxUses: "1", visitors: [{ visitorName: "", vehiclePlate: "" }] });
+      setForm({ unitId: units[0]?.id ?? "", validFrom: "", validTo: "", maxUses: "1", visitors: [{ visitorName: "", vehiclePlate: "" }] });
       const gpRes = await fetch("/api/v1/gate-passes/mine");
       const gpJson = await gpRes.json();
       if (gpJson.ok) setPasses(gpJson.data.passes ?? []);
@@ -88,10 +95,12 @@ export default function TenantGatePassesPage() {
   async function handleRevoke(passId: string) {
     if (!confirm("Revoke this gate pass?")) return;
     try {
-      await fetch(`/api/v1/gate-passes/mine/${passId}/revoke`, { method: "POST" });
+      const response = await fetch(`/api/v1/gate-passes/mine/${passId}/revoke`, { method: "POST" });
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error?.message ?? "Gate pass could not be revoked.");
       setPasses((prev) => prev.map((p) => (p.id === passId ? { ...p, status: "REVOKED" } : p)));
     } catch {
-      // silent
+      setError("Gate pass could not be revoked. Refresh and try again.");
     }
   }
 
@@ -116,24 +125,29 @@ export default function TenantGatePassesPage() {
       )}
 
       {showCreate && (
-        <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-4">
+        <form onSubmit={handleCreate} className="rounded-xl border border-neutral-200 bg-white p-4 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700">Unit</label>
+              <label htmlFor="gate-pass-unit" className="block text-sm font-medium text-neutral-700">Unit</label>
               <select
+                id="gate-pass-unit"
+                name="unitId"
+                required
                 value={form.unitId}
                 onChange={(e) => setForm({ ...form, unitId: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
               >
                 <option value="">Select unit...</option>
                 {units.map((u) => (
-                  <option key={u.id} value={u.id}>{u.public_label}</option>
+                  <option key={u.id} value={u.id}>{u.publicLabel}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700">Max uses</label>
+              <label htmlFor="gate-pass-max-uses" className="block text-sm font-medium text-neutral-700">Max uses</label>
               <input
+                id="gate-pass-max-uses"
+                name="maxUses"
                 type="number"
                 min={1}
                 max={100}
@@ -143,18 +157,24 @@ export default function TenantGatePassesPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700">Valid from</label>
+              <label htmlFor="gate-pass-valid-from" className="block text-sm font-medium text-neutral-700">Valid from</label>
               <input
+                id="gate-pass-valid-from"
+                name="validFrom"
                 type="datetime-local"
+                required
                 value={form.validFrom}
                 onChange={(e) => setForm({ ...form, validFrom: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700">Valid to</label>
+              <label htmlFor="gate-pass-valid-to" className="block text-sm font-medium text-neutral-700">Valid to</label>
               <input
+                id="gate-pass-valid-to"
+                name="validTo"
                 type="datetime-local"
+                required
                 value={form.validTo}
                 onChange={(e) => setForm({ ...form, validTo: e.target.value })}
                 className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
@@ -167,6 +187,8 @@ export default function TenantGatePassesPage() {
             {form.visitors.map((v, i) => (
               <div key={i} className="mt-2 flex gap-2">
                 <input
+                  aria-label={`Visitor ${i + 1} name`}
+                  required={i === 0}
                   placeholder="Visitor name"
                   value={v.visitorName}
                   onChange={(e) => {
@@ -177,6 +199,7 @@ export default function TenantGatePassesPage() {
                   className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
                 />
                 <input
+                  aria-label={`Visitor ${i + 1} plate`}
                   placeholder="Plate (optional)"
                   value={v.vehiclePlate}
                   onChange={(e) => {
@@ -188,6 +211,7 @@ export default function TenantGatePassesPage() {
                 />
                 {form.visitors.length > 1 && (
                   <button
+                    type="button"
                     onClick={() => setForm({ ...form, visitors: form.visitors.filter((_, j) => j !== i) })}
                     className="rounded-lg border border-neutral-200 px-2 text-sm text-neutral-500 hover:bg-neutral-50"
                   >
@@ -197,6 +221,7 @@ export default function TenantGatePassesPage() {
               </div>
             ))}
             <button
+              type="button"
               onClick={() => setForm({ ...form, visitors: [...form.visitors, { visitorName: "", vehiclePlate: "" }] })}
               className="mt-2 text-sm text-blue-600 hover:underline"
             >
@@ -207,13 +232,13 @@ export default function TenantGatePassesPage() {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button
-            onClick={handleCreate}
-            disabled={submitting || !form.unitId || !form.validFrom || !form.validTo || !form.visitors.some((v) => v.visitorName.trim())}
+            type="submit"
+            disabled={submitting}
             className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? "Creating..." : "Create Gate Pass"}
           </button>
-        </div>
+        </form>
       )}
 
       {loading ? (
@@ -226,7 +251,7 @@ export default function TenantGatePassesPage() {
             <div key={p.id} className="rounded-xl border border-neutral-200 bg-white p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-medium text-neutral-900">Unit {p.unitLabel}</span>
+                  <span className="font-medium text-neutral-900">{p.unitLabel}</span>
                   <span className={`ml-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                     p.status === "ACTIVE" ? "bg-green-100 text-green-700" :
                     p.status === "USED" ? "bg-blue-100 text-blue-700" :

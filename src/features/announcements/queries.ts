@@ -45,8 +45,8 @@ export async function getActiveAnnouncements(): Promise<AnnouncementView[]> {
   if (!rows.length) return [];
   const authorIds = [...new Set(rows.map((r) => r.created_by))];
   const { data: profiles } = await supabase
-    .from("profiles").select("id, full_name").in("id", authorIds);
-  const authorMap = new Map((profiles ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+    .from("profiles").select("id, display_name").in("id", authorIds);
+  const authorMap = new Map((profiles ?? []).map((p: { id: string; display_name: string | null }) => [p.id, p.display_name]));
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
@@ -81,8 +81,8 @@ export async function getAllAnnouncements(): Promise<AnnouncementView[]> {
   if (!rows.length) return [];
   const authorIds = [...new Set(rows.map((r) => r.created_by))];
   const { data: profiles } = await supabase
-    .from("profiles").select("id, full_name").in("id", authorIds);
-  const authorMap = new Map((profiles ?? []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+    .from("profiles").select("id, display_name").in("id", authorIds);
+  const authorMap = new Map((profiles ?? []).map((p: { id: string; display_name: string | null }) => [p.id, p.display_name]));
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
@@ -105,7 +105,7 @@ export async function createAnnouncement(input: CreateAnnouncementInput): Promis
   }
   const supabase = createServiceRoleClient();
   const { data: profile } = await supabase
-    .from("profiles").select("id").eq("user_id", actor!.userId).single();
+    .from("profiles").select("id").eq("id", actor!.userId).single();
   if (!profile) throw new Error("No profile found.");
   const { data, error } = await supabase
     .from("announcements")

@@ -3,7 +3,7 @@
  * the session-mode pooler. No Docker required.
  *
  * Usage:
- *   tsx scripts/db-apply.ts [--reset] [--seed]
+ *   tsx scripts/db-apply.ts [--reset] [--seed] [--only=0016_demo_operations_completion.sql]
  *
  * Reads DIRECT_URL from the environment (session-mode pooler, port 5432).
  * `--reset` recreates the public + app schemas and restores Supabase default
@@ -55,6 +55,7 @@ async function main() {
   }
   const reset = process.argv.includes("--reset");
   const seed = process.argv.includes("--seed");
+  const only = process.argv.find((arg) => arg.startsWith("--only="))?.slice("--only=".length);
 
   const client = new Client({
     connectionString: conn,
@@ -70,7 +71,9 @@ async function main() {
     }
 
     const migDir = resolve(process.cwd(), "supabase", "migrations");
-    const migrations = readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
+    const allMigrations = readdirSync(migDir).filter((f) => f.endsWith(".sql")).sort();
+    if (only && !allMigrations.includes(only)) throw new Error(`Migration not found: ${only}`);
+    const migrations = only ? [only] : allMigrations;
     for (const f of migrations) {
       const sql = readFileSync(join(migDir, f), "utf8");
       process.stdout.write(`[db-apply] migration ${f} … `);

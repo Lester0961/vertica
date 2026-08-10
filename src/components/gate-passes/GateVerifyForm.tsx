@@ -37,6 +37,7 @@ export function GateVerifyForm() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [eventType, setEventType] = useState<"ENTRY" | "EXIT">("ENTRY");
 
   async function handleVerify() {
     if (code.length !== 6) return;
@@ -47,7 +48,7 @@ export function GateVerifyForm() {
       const res = await fetch("/api/v1/gate-passes/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, eventType }),
       });
       const json = await res.json();
       if (!json.ok) {
@@ -69,8 +70,20 @@ export function GateVerifyForm() {
         <p className="mt-1 text-sm text-neutral-500">Enter the 6-digit code from the visitor.</p>
       </div>
 
-      <div className="flex gap-2">
+      <form
+        className="space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleVerify();
+        }}
+      >
+        <fieldset><legend className="mb-2 text-sm font-medium text-neutral-700">Movement</legend><div className="grid grid-cols-2 gap-2">{(["ENTRY", "EXIT"] as const).map((value) => <button key={value} type="button" onClick={() => setEventType(value)} className={eventType === value ? "rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white" : "rounded-lg border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700"}>{value === "ENTRY" ? "Log entry" : "Log exit"}</button>)}</div></fieldset>
+        <label htmlFor="gate-pass-code" className="block text-sm font-medium text-neutral-700">
+          6-digit access code
+        </label>
+        <div className="flex flex-col gap-2 sm:flex-row">
         <input
+          id="gate-pass-code"
           type="text"
           inputMode="numeric"
           maxLength={6}
@@ -78,18 +91,18 @@ export function GateVerifyForm() {
           placeholder="000000"
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          onKeyDown={(e) => e.key === "Enter" && handleVerify()}
-          className="flex-1 rounded-lg border border-neutral-300 px-4 py-3 text-center font-mono text-2xl tracking-[0.3em] text-neutral-900 placeholder:text-neutral-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-neutral-300 px-4 py-3 text-center font-mono text-2xl tracking-[0.3em] text-neutral-900 placeholder:text-neutral-300 focus:border-blue-500 focus:outline-none"
           autoFocus
         />
         <button
-          onClick={handleVerify}
+          type="submit"
           disabled={loading || code.length !== 6}
           className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {loading ? "Checking..." : "Verify"}
+          {loading ? "Checking..." : `Verify ${eventType.toLowerCase()}`}
         </button>
-      </div>
+        </div>
+      </form>
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
@@ -98,11 +111,12 @@ export function GateVerifyForm() {
       {result && (
         <div className={`rounded-lg border p-4 ${RESULT_STYLES[result.result] ?? "bg-neutral-50 border-neutral-200"}`}>
           <div className="text-lg font-semibold">{RESULT_LABELS[result.result] ?? result.result}</div>
+          {result.result === "VALID" && <p className="mt-1 text-sm font-medium">{eventType === "ENTRY" ? "Entry recorded." : "Exit recorded."}</p>}
           {result.denialReason && <p className="mt-1 text-sm opacity-80">{result.denialReason}</p>}
           {result.pass && (
             <div className="mt-3 space-y-1 text-sm">
               <div>Unit: <span className="font-medium">{result.pass.unitLabel}</span></div>
-              <div>Valid: {new Date(result.pass.validFrom).toLocaleDateString()} – {new Date(result.pass.validTo).toLocaleDateString()}</div>
+              <div>Valid: {new Date(result.pass.validFrom).toLocaleDateString()} to {new Date(result.pass.validTo).toLocaleDateString()}</div>
               <div>Uses: {result.pass.useCount}/{result.pass.maxUses}</div>
               {result.pass.visitors.length > 0 && (
                 <div className="mt-2">

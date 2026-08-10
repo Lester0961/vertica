@@ -47,6 +47,15 @@ function isPublicPath(pathname: string): boolean {
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   let supabaseResponse = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
+
+  // Public pages do not need a session refresh or identity validation. Besides
+  // avoiding unnecessary work, returning here keeps the catalogue and sign-in
+  // flow available when Supabase Auth is briefly slow.
+  if (isPublicPath(pathname)) {
+    supabaseResponse.headers.set("Cache-Control", "private, no-store");
+    return supabaseResponse;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -74,9 +83,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims ?? null;
 
-  const pathname = request.nextUrl.pathname;
-
-  if (!claims && !isPublicPath(pathname)) {
+  if (!claims) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", pathname);

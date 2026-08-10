@@ -9,6 +9,7 @@ import { registerGatePassRoutes } from "@/features/gate-passes/api";
 import { registerAnnouncementRoutes } from "@/features/announcements/api";
 import { registerReportRoutes } from "@/features/reports/api";
 import { registerUserRoutes } from "@/features/users/api";
+import { registerStaffRoutes } from "@/features/staff/api";
 
 registerUnitRoutes();
 registerRecommendationRoutes();
@@ -19,6 +20,7 @@ registerGatePassRoutes();
 registerAnnouncementRoutes();
 registerReportRoutes();
 registerUserRoutes();
+registerStaffRoutes();
 
 export const dynamic = "force-dynamic";
 

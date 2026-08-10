@@ -3,8 +3,9 @@
 import { useActionState } from "react";
 import { updatePasswordAction, type AuthFormState } from "@/features/auth/actions";
 import { Button } from "@/components/design-system/Button";
-import { Input } from "@/components/design-system/Input";
+import { PasswordField } from "@/components/design-system/PasswordField";
 import { Alert } from "@/components/design-system/Alert";
+import styles from "../auth.module.css";
 
 const initial: AuthFormState = {};
 
@@ -12,30 +13,28 @@ export function ResetPasswordForm() {
   const [state, action, pending] = useActionState(updatePasswordAction, initial);
 
   return (
-    <form action={action} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <div>
-        <h1 style={{ fontSize: 26, margin: "0 0 4px" }}>Choose a new password</h1>
-        <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>
-          Enter a new password for your account.
-        </p>
+    <form action={action} className={styles.form}>
+      <div className={styles.formHeader}>
+        <p>Account security</p>
+        <h1>Choose a new password.</h1>
+        <p>Use at least eight characters and save it in your password manager.</p>
       </div>
       {state.error ? <Alert tone="danger">{state.error}</Alert> : null}
-      <Input
+      <PasswordField
         label="New password"
         name="password"
-        type="password"
         autoComplete="new-password"
         minLength={8}
         required
         hint="At least 8 characters."
       />
-      <Input
+      <PasswordField
         label="Confirm password"
         name="confirm"
-        type="password"
         autoComplete="new-password"
         minLength={8}
         required
+        toggleLabel="confirmation password"
       />
       <Button type="submit" loading={pending}>
         Update password

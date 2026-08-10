@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { createServiceRoleClient } from "@/lib/supabase/service";
+import { authenticate, AuthorizationError } from "@/lib/security/authenticate";
 
 export interface UnitFilters {
   type?: string; // unit_type code
@@ -28,6 +30,14 @@ export interface UnitListItem {
   capacity: number | null;
   furnishing: string | null;
   availableFrom: string | null;
+  unitNumber?: string;
+  minLeaseMonths?: number;
+  orientation?: string | null;
+  isPublic?: boolean;
+  statusVersion?: number;
+  floorId?: string;
+  unitTypeId?: string;
+  buildingId?: string;
 }
 
 interface UnitRow {
@@ -39,12 +49,20 @@ interface UnitRow {
   capacity: number | null;
   furnishing: string | null;
   available_from: string | null;
+  unit_number: string;
+  min_lease_months: number;
+  orientation: string | null;
+  is_public: boolean;
+  status_version: number;
+  floor_id: string;
+  unit_type_id: string;
+  building_id: string;
   unit_types: { code: string; name: string; bedrooms: number; bathrooms: number | string } | null;
   floors: { floor_number: number; public_label: string } | null;
 }
 
 const SELECT =
-  "id, public_label, area_sqm, monthly_rent, monthly_dues, capacity, furnishing, available_from, " +
+  "id, public_label, unit_number, area_sqm, monthly_rent, monthly_dues, capacity, furnishing, available_from, min_lease_months, orientation, is_public, status_version, floor_id, unit_type_id, building_id, " +
   "unit_types!inner(code, name, bedrooms, bathrooms), floors!inner(floor_number, public_label)";
 
 function mapRow(r: UnitRow): UnitListItem {
@@ -63,6 +81,14 @@ function mapRow(r: UnitRow): UnitListItem {
     capacity: r.capacity,
     furnishing: r.furnishing,
     availableFrom: r.available_from,
+    unitNumber: r.unit_number,
+    minLeaseMonths: r.min_lease_months,
+    orientation: r.orientation,
+    isPublic: r.is_public,
+    statusVersion: r.status_version,
+    floorId: r.floor_id,
+    unitTypeId: r.unit_type_id,
+    buildingId: r.building_id,
   };
 }
 
@@ -93,6 +119,155 @@ export async function listPublicUnits(filters: UnitFilters = {}): Promise<UnitLi
   const { data, error } = await q;
   if (error) throw error;
   return ((data ?? []) as unknown as UnitRow[]).map(mapRow);
+}
+
+/** Staff inventory view. Unlike the public catalogue, this intentionally includes every unit status. */
+export async function listAdminUnits(): Promise<(UnitListItem & { status: string })[]> {
+  const actor = await authenticate();
+  if (!actor?.roles.some((role) => role === "SUPER_ADMIN" || role === "PROPERTY_ADMIN")) {
+    throw new AuthorizationError(403, "Admin access only.");
+  }
+  const { data, error } = await createServiceRoleClient()
+    .from("units")
+    .select(`${SELECT}, status`)
+    .order("public_label");
+  if (error) throw new Error("Could not load unit inventory.");
+  return ((data ?? []) as unknown as (UnitRow & { status: string })[]).map((row) => ({ ...mapRow(row), status: row.status }));
+}
+
+const MANUAL_UNIT_STATUSES = ["AVAILABLE", "RESERVED", "MAINTENANCE", "UNAVAILABLE"] as const;
+export type ManualUnitStatus = (typeof MANUAL_UNIT_STATUSES)[number];
+
+export interface UnitAdminInput {
+  buildingId: string;
+  floorId: string;
+  unitTypeId: string;
+  unitNumber: string;
+  publicLabel: string;
+  areaSqm: number;
+  monthlyRent: number;
+  monthlyDues: number;
+  availableFrom?: string | null;
+  minLeaseMonths: number;
+  status: ManualUnitStatus | "DRAFT" | "OCCUPIED";
+  isPublic: boolean;
+  furnishing?: "UNFURNISHED" | "SEMI_FURNISHED" | "FURNISHED" | null;
+  capacity?: number | null;
+  orientation?: string | null;
+}
+
+export async function getAdminUnitOptions() {
+  const actor = await authenticate();
+  if (!actor?.roles.some((role) => role === "SUPER_ADMIN" || role === "PROPERTY_ADMIN")) throw new AuthorizationError(403, "Admin access only.");
+  const supabase = createServiceRoleClient();
+  const [{ data: buildings, error: buildingError }, { data: floors, error: floorError }, { data: unitTypes, error: typeError }] = await Promise.all([
+    supabase.from("buildings").select("id, name").eq("status", "ACTIVE").order("name"),
+    supabase.from("floors").select("id, building_id, floor_number, public_label").order("sort_order"),
+    supabase.from("unit_types").select("id, code, name, base_area_sqm, capacity, default_dues").order("name"),
+  ]);
+  if (buildingError || floorError || typeError) throw new Error("Could not load unit form options.");
+  return { buildings: buildings ?? [], floors: floors ?? [], unitTypes: unitTypes ?? [] };
+}
+
+async function requireInventoryAdmin() {
+  const actor = await authenticate();
+  if (!actor?.roles.some((role) => role === "SUPER_ADMIN" || role === "PROPERTY_ADMIN")) throw new AuthorizationError(403, "Admin access only.");
+  return actor;
+}
+
+function unitPayload(input: UnitAdminInput) {
+  return {
+    building_id: input.buildingId,
+    floor_id: input.floorId,
+    unit_type_id: input.unitTypeId,
+    unit_number: input.unitNumber.trim(),
+    public_label: input.publicLabel.trim(),
+    area_sqm: input.areaSqm,
+    monthly_rent: input.monthlyRent,
+    monthly_dues: input.monthlyDues,
+    available_from: input.availableFrom || null,
+    min_lease_months: input.minLeaseMonths,
+    status: input.status,
+    is_public: input.isPublic,
+    furnishing: input.furnishing || null,
+    capacity: input.capacity || null,
+    orientation: input.orientation?.trim() || null,
+  };
+}
+
+export async function createAdminUnit(input: UnitAdminInput) {
+  const actor = await requireInventoryAdmin();
+  if (input.status === "OCCUPIED") throw new Error("Create a lease to mark a unit occupied.");
+  const supabase = createServiceRoleClient();
+  const { data, error } = await supabase.from("units").insert(unitPayload(input)).select(`${SELECT}, status`).maybeSingle();
+  if (error || !data) throw new Error(error?.message.includes("duplicate") ? "That unit number or public label already exists." : "Unit could not be created.");
+  await supabase.from("unit_status_events").insert({ unit_id: data.id, next_status: data.status, source_entity: "ADMIN_UI", actor_id: actor.userId, reason: "Unit created" });
+  return { ...mapRow(data as unknown as UnitRow), status: data.status };
+}
+
+export async function updateAdminUnitDetails(unitId: string, input: UnitAdminInput, expectedVersion: number) {
+  await requireInventoryAdmin();
+  const supabase = createServiceRoleClient();
+  const { data: current } = await supabase.from("units").select("id, status, status_version").eq("id", unitId).maybeSingle();
+  if (!current) throw new Error("Unit not found.");
+  if (current.status === "OCCUPIED" && input.status !== "OCCUPIED") throw new Error("End the active lease before changing an occupied unit.");
+  const { data, error } = await supabase.from("units").update({ ...unitPayload(input), status_version: expectedVersion + 1 }).eq("id", unitId).eq("status_version", expectedVersion).select(`${SELECT}, status`).maybeSingle();
+  if (error || !data) throw new Error(error?.message.includes("duplicate") ? "That unit number or public label already exists." : "Unit changed elsewhere. Refresh and try again.");
+  return { ...mapRow(data as unknown as UnitRow), status: data.status };
+}
+
+/** Admin-only manual status transition with an append-only audit event. */
+export async function updateAdminUnitStatus(
+  unitId: string,
+  nextStatus: ManualUnitStatus,
+  reason: string,
+): Promise<{ id: string; status: string }> {
+  const actor = await authenticate();
+  if (!actor?.roles.some((role) => role === "SUPER_ADMIN" || role === "PROPERTY_ADMIN")) {
+    throw new AuthorizationError(403, "Admin access only.");
+  }
+  if (!MANUAL_UNIT_STATUSES.includes(nextStatus)) {
+    throw new Error("That status cannot be assigned manually.");
+  }
+
+  const supabase = createServiceRoleClient();
+  const { data: unit } = await supabase
+    .from("units")
+    .select("id, status")
+    .eq("id", unitId)
+    .maybeSingle();
+  if (!unit) throw new Error("Unit not found.");
+  if (unit.status === "OCCUPIED") {
+    const { count } = await supabase
+      .from("leases")
+      .select("id", { count: "exact", head: true })
+      .eq("unit_id", unitId)
+      .eq("status", "ACTIVE");
+    if ((count ?? 0) > 0) {
+      throw new Error("End the active lease before changing this occupied unit.");
+    }
+  }
+  if (unit.status === nextStatus) return { id: unit.id, status: unit.status };
+
+  const { data: updated, error } = await supabase
+    .from("units")
+    .update({ status: nextStatus })
+    .eq("id", unitId)
+    .eq("status", unit.status)
+    .select("id, status")
+    .maybeSingle();
+  if (error || !updated) throw new Error("Unit status changed elsewhere. Refresh and try again.");
+
+  const { error: eventError } = await supabase.from("unit_status_events").insert({
+    unit_id: unitId,
+    previous_status: unit.status,
+    next_status: nextStatus,
+    source_entity: "ADMIN_UI",
+    actor_id: actor.userId,
+    reason,
+  });
+  if (eventError) throw new Error("Unit changed, but its audit event could not be recorded.");
+  return { id: updated.id, status: updated.status };
 }
 
 export interface UnitFeatureValue {

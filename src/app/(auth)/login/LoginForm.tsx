@@ -1,25 +1,24 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { loginAction, type AuthFormState } from "@/features/auth/actions";
 import { Button } from "@/components/design-system/Button";
 import { Input } from "@/components/design-system/Input";
+import { PasswordField } from "@/components/design-system/PasswordField";
 import { Alert } from "@/components/design-system/Alert";
+import styles from "../auth.module.css";
 
 const initial: AuthFormState = {};
 
 export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const [state, action, pending] = useActionState(loginAction, initial);
-  const [showPassword, setShowPassword] = useState(false);
-
   return (
-    <form action={action} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-      <div>
-        <h1 style={{ fontSize: 26, margin: "0 0 4px" }}>Resident &amp; staff login</h1>
-        <p style={{ color: "var(--muted)", margin: 0, fontSize: 14 }}>
-          Sign in to access your Vertica portal.
-        </p>
+    <form action={action} className={styles.form}>
+      <div className={styles.formHeader}>
+        <p>Secure portal</p>
+        <h1>Welcome back to Vertica.</h1>
+        <p>Use the account issued for your resident, administration, maintenance, or security role.</p>
       </div>
 
       {state.error ? <Alert tone="danger">{state.error}</Alert> : null}
@@ -33,30 +32,21 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         autoComplete="email"
         required
         placeholder="you@example.com"
+        style={{ minHeight: 50 }}
       />
 
-      <Input
+      <PasswordField
         label="Password"
         name="password"
-        type={showPassword ? "text" : "password"}
         autoComplete="current-password"
         required
       />
-
-      <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 14 }}>
-        <input
-          type="checkbox"
-          checked={showPassword}
-          onChange={(e) => setShowPassword(e.target.checked)}
-        />
-        Show password
-      </label>
 
       <Button type="submit" loading={pending}>
         Sign in
       </Button>
 
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+      <div className={styles.formLinks}>
         <Link href="/forgot-password">Forgot password?</Link>
         <Link href="/">Back to site</Link>
       </div>

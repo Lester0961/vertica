@@ -112,7 +112,7 @@ export function UnitCatalogue({
                 <option value="">Any</option>
                 <option value="UNFURNISHED">Unfurnished</option>
                 <option value="SEMI_FURNISHED">Semi-furnished</option>
-                <option value="FULLY_FURNISHED">Fully furnished</option>
+                <option value="FURNISHED">Furnished</option>
               </select>
             </label>
 

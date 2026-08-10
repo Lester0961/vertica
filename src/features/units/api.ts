@@ -4,8 +4,13 @@ import { register, type ApiContext } from "@/lib/api/router";
 import { getPropertySummary, getUnitTypes } from "@/features/property/queries";
 import {
   getPublicUnitByLabel,
+  getAdminUnitOptions,
+  createAdminUnit,
+  updateAdminUnitDetails,
   getUnitsByLabels,
+  listAdminUnits,
   listPublicUnits,
+  updateAdminUnitStatus,
   type UnitFilters,
 } from "@/features/units/queries";
 
@@ -52,6 +57,62 @@ async function unitTypesHandler() {
   return ok({ unitTypes: await getUnitTypes() });
 }
 
+async function adminListHandler() {
+  try {
+    const units = await listAdminUnits();
+    return ok({ units, count: units.length });
+  } catch (error) {
+    return fail("FORBIDDEN", (error as Error).message);
+  }
+}
+
+async function adminOptionsHandler() {
+  try { return ok(await getAdminUnitOptions()); } catch (error) { return fail("FORBIDDEN", (error as Error).message); }
+}
+
+const unitInputSchema = z.object({
+  buildingId: z.uuid(), floorId: z.uuid(), unitTypeId: z.uuid(), unitNumber: z.string().trim().min(1).max(20), publicLabel: z.string().trim().min(1).max(40),
+  areaSqm: z.number().positive(), monthlyRent: z.number().nonnegative(), monthlyDues: z.number().nonnegative(), availableFrom: z.iso.date().nullable().optional(), minLeaseMonths: z.number().int().positive(),
+  status: z.enum(["DRAFT", "AVAILABLE", "RESERVED", "MAINTENANCE", "UNAVAILABLE", "OCCUPIED"]), isPublic: z.boolean(), furnishing: z.enum(["UNFURNISHED", "SEMI_FURNISHED", "FURNISHED"]).nullable().optional(), capacity: z.number().int().positive().nullable().optional(), orientation: z.string().max(80).nullable().optional(), expectedVersion: z.number().int().positive().optional(),
+});
+
+async function adminCreateHandler(ctx: ApiContext) {
+  let body: unknown; try { body = await ctx.req.json(); } catch { return fail("BAD_REQUEST", "Invalid JSON body."); }
+  const parsed = unitInputSchema.omit({ expectedVersion: true }).safeParse(body);
+  if (!parsed.success) return fail("BAD_REQUEST", "Complete the required unit details.", { issues: parsed.error.issues });
+  try { return ok({ unit: await createAdminUnit(parsed.data) }); } catch (error) { return fail("UNPROCESSABLE", (error as Error).message); }
+}
+
+async function adminDetailsHandler(ctx: ApiContext) {
+  let body: unknown; try { body = await ctx.req.json(); } catch { return fail("BAD_REQUEST", "Invalid JSON body."); }
+  const parsed = unitInputSchema.required({ expectedVersion: true }).safeParse(body);
+  if (!parsed.success) return fail("BAD_REQUEST", "Complete the required unit details.", { issues: parsed.error.issues });
+  const { expectedVersion, ...input } = parsed.data;
+  try { return ok({ unit: await updateAdminUnitDetails(ctx.params.id!, input, expectedVersion) }); } catch (error) { return fail("STATE_CONFLICT", (error as Error).message); }
+}
+
+const updateStatusSchema = z.object({
+  status: z.enum(["AVAILABLE", "RESERVED", "MAINTENANCE", "UNAVAILABLE"]),
+  reason: z.string().trim().min(3).max(500),
+});
+
+async function adminUpdateHandler(ctx: ApiContext) {
+  let body: unknown;
+  try {
+    body = await ctx.req.json();
+  } catch {
+    return fail("BAD_REQUEST", "Invalid JSON body.");
+  }
+  const parsed = updateStatusSchema.safeParse(body);
+  if (!parsed.success) return fail("BAD_REQUEST", "A status and reason are required.", { issues: parsed.error.issues });
+  try {
+    return ok({ unit: await updateAdminUnitStatus(ctx.params.id!, parsed.data.status, parsed.data.reason) });
+  } catch (error) {
+    const message = (error as Error).message;
+    return fail(message.includes("elsewhere") ? "STATE_CONFLICT" : "UNPROCESSABLE", message);
+  }
+}
+
 const compareSchema = z.object({
   labels: z.array(z.string().min(1)).min(1).max(3),
 });
@@ -77,6 +138,11 @@ export function registerUnitRoutes(): void {
   register("GET", "public/property", propertyHandler);
   register("GET", "public/unit-types", unitTypesHandler);
   register("GET", "public/units", listHandler);
+  register("GET", "admin/units", adminListHandler);
+  register("GET", "admin/units/options", adminOptionsHandler);
+  register("POST", "admin/units", adminCreateHandler);
+  register("PATCH", "admin/units/:id", adminUpdateHandler);
+  register("PATCH", "admin/units/:id/details", adminDetailsHandler);
   register("GET", "public/units/:publicLabel", getHandler);
   register("POST", "compare", compareHandler);
 }

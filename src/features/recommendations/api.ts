@@ -3,8 +3,8 @@ import { randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
 import { ok, fail } from "@/lib/api/response";
 import { type ApiContext, register } from "@/lib/api/router";
-import { listPublicUnits } from "@/features/units/queries";
-import { rankCandidates, scoreUnits, type Questionnaire } from "@/features/recommendations/engine";
+import { getPublicUnitByLabel, listPublicUnits } from "@/features/units/queries";
+import { diversifyCandidates, rankCandidates, scoreUnits, type Questionnaire } from "@/features/recommendations/engine";
 
 const questionnaireSchema = z.object({
   budgetMax: z.number().positive().max(10_000_000),
@@ -14,6 +14,10 @@ const questionnaireSchema = z.object({
   priorities: z.array(z.string()).max(12),
   moveInBy: z.string().optional(),
   pets: z.boolean().optional(),
+  minArea: z.number().positive().max(1000).optional(),
+  furnishing: z.enum(["ANY", "UNFURNISHED", "SEMI_FURNISHED", "FULLY_FURNISHED"]).optional(),
+  floorPreference: z.enum(["ANY", "LOW", "MID", "HIGH"]).optional(),
+  accessibilityRequired: z.boolean().optional(),
 });
 
 async function recommendHandler(ctx: ApiContext) {
@@ -29,9 +33,18 @@ async function recommendHandler(ctx: ApiContext) {
   }
 
   const q: Questionnaire = parsed.data;
-  const units = await listPublicUnits({});
+  const baseUnits = await listPublicUnits({});
+  const units = await Promise.all(baseUnits.map(async (unit) => {
+    const detail = await getPublicUnitByLabel(unit.publicLabel);
+    const features = Object.fromEntries((detail?.features ?? []).map((feature) => [
+      feature.code,
+      feature.valueBoolean ?? feature.valueNumeric ?? feature.valueText,
+    ]));
+    return { ...unit, features };
+  }));
   const candidates = scoreUnits(units, q);
-  const ranked = rankCandidates(candidates);
+  const eligible = rankCandidates(candidates);
+  const ranked = diversifyCandidates(eligible, 3);
 
   // Best-effort audit persistence (write-only; no PII). Falls back gracefully
   // if RLS disallows inserts — recommendations are still returned.
@@ -64,7 +77,7 @@ async function recommendHandler(ctx: ApiContext) {
     if (candidateRows.length) {
       await supabase.from("recommendation_candidates").insert(candidateRows);
     }
-    const rows = ranked.slice(0, 10).map((c, i) => ({
+    const rows = ranked.map((c, i) => ({
       session_id: sessionId,
       unit_id: c.unit.id,
       rank: i + 1,
@@ -82,7 +95,8 @@ async function recommendHandler(ctx: ApiContext) {
   return ok({
     sessionId,
     count: ranked.length,
-    recommendations: ranked.slice(0, 10).map((c) => ({
+    eligibleCount: eligible.length,
+    recommendations: ranked.map((c) => ({
       publicLabel: c.unit.publicLabel,
       unitTypeCode: c.unit.unitTypeCode,
       bedrooms: c.unit.bedrooms,

@@ -2,11 +2,11 @@ import * as React from "react";
 
 type Tone = "info" | "success" | "warning" | "danger";
 
-const tones: Record<Tone, { border: string; color: string }> = {
-  info: { border: "var(--border-strong)", color: "var(--text)" },
-  success: { border: "var(--success)", color: "var(--success)" },
-  warning: { border: "var(--warning)", color: "var(--warning)" },
-  danger: { border: "var(--danger)", color: "var(--danger)" },
+const tones: Record<Tone, { border: string; color: string; background: string }> = {
+  info: { border: "var(--info)", color: "var(--info)", background: "var(--info-soft)" },
+  success: { border: "var(--success)", color: "var(--success)", background: "var(--success-soft)" },
+  warning: { border: "var(--warning)", color: "var(--warning)", background: "var(--warning-soft)" },
+  danger: { border: "var(--danger)", color: "var(--danger)", background: "var(--danger-soft)" },
 };
 
 export function Alert({
@@ -27,7 +27,7 @@ export function Alert({
         padding: "12px 14px",
         borderRadius: "var(--radius-sm)",
         border: `1px solid ${t.border}`,
-        background: "var(--surface)",
+        background: t.background,
         color: t.color,
         fontSize: 14,
       }}
@@ -43,7 +43,7 @@ export function Alert({
           flexShrink: 0,
         }}
       />
-      <div style={{ color: "var(--text)" }}>{children}</div>
+      <div style={{ color: "var(--text-soft)" }}>{children}</div>
     </div>
   );
 }

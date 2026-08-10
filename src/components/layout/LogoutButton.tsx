@@ -6,7 +6,7 @@ export function LogoutButton() {
       <button
         type="submit"
         style={{
-          background: "transparent",
+          background: "var(--surface-elevated)",
           border: "1px solid var(--border-strong)",
           borderRadius: "var(--radius-sm)",
           padding: "8px 14px",

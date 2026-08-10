@@ -78,7 +78,7 @@ export function UnitCard({ unit, badge }: { unit: UnitCardData; badge?: string }
           Available from {formatDate(unit.availableFrom)}
         </div>
         <Link
-          href="/available-units"
+          href={`/units/${encodeURIComponent(unit.publicLabel)}`}
           style={{
             marginTop: 4,
             textAlign: "center",

@@ -16,8 +16,8 @@ export default async function MaintenanceAssignedPage() {
       <div className="mt-6 space-y-3">
         {open.length === 0 ? (
           <p className="rounded-xl border border-dashed border-neutral-300 p-6 text-neutral-500">
-            Inbox zero. Nothing pending.
-        </p>
+            No open requests are assigned to the service queue.
+          </p>
         ) : (
           open.map((r) => (
             <div key={r.id} className="rounded-xl border border-neutral-200 bg-white p-4">
@@ -27,7 +27,7 @@ export default async function MaintenanceAssignedPage() {
               </span>
                 <span className={"rounded-full px-2 py-0.5 text-xs font-medium " +
                   (r.isSafety ? "bg-red-50 text-red-700" : "bg-neutral-100 text-neutral-600")}>
-                  {r.status}{r.isSafety ? " · ⚠" : ""}
+                  {r.status}{r.isSafety ? " · Safety issue" : ""}
               </span>
             </div>
               <p className="mt-1 text-sm text-neutral-600">

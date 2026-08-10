@@ -22,7 +22,7 @@ const SPECS: EnvSpec[] = [
     description: "Supabase project URL",
   },
   {
-    name: "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    name: "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     required: true,
     serverOnly: false,
     description: "Supabase publishable/anon key (RLS-protected)",

@@ -1,5 +1,9 @@
 import type { UnitListItem } from "@/features/units/queries";
 
+export type RecommendationUnit = UnitListItem & {
+  features?: Record<string, boolean | number | string | null>;
+};
+
 export interface Questionnaire {
   budgetMax: number;
   budgetMin?: number;
@@ -8,10 +12,14 @@ export interface Questionnaire {
   priorities: string[]; // free-form tags, normalized against unit features
   moveInBy?: string; // ISO date
   pets?: boolean;
+  minArea?: number;
+  furnishing?: "ANY" | "UNFURNISHED" | "SEMI_FURNISHED" | "FULLY_FURNISHED";
+  floorPreference?: "ANY" | "LOW" | "MID" | "HIGH";
+  accessibilityRequired?: boolean;
 }
 
 export interface Candidate {
-  unit: UnitListItem;
+  unit: RecommendationUnit;
   score: number; // 0..100
   reasons: string[];
   hardFail: boolean;
@@ -43,10 +51,22 @@ function normalizePriority(p: string): string {
   return key;
 }
 
-function featureOn(unit: UnitListItem, code: string): boolean {
-  // Feature presence is evaluated by the detail engine; here we approximate using
-  // known codes surfaced on the list item via furnishing/type heuristics.
-  return false;
+function featureOn(unit: RecommendationUnit, code: string): boolean {
+  const aliases: Record<string, string> = {
+    pet_friendly: "pets_allowed",
+    workspace: "workspace_level",
+    quiet: "quietness",
+    near_elevator: "elevator_distance",
+  };
+  const value = unit.features?.[aliases[code] ?? code];
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value > 0;
+  return typeof value === "string" && value.length > 0;
+}
+
+function featureNumber(unit: RecommendationUnit, code: string): number | null {
+  const value = unit.features?.[code];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 /**
@@ -55,7 +75,7 @@ function featureOn(unit: UnitListItem, code: string): boolean {
  * unit with a score and human-readable reasons (fail-closed: a unit that violates
  * a hard constraint is marked hardFail and excluded from ranking).
  */
-export function scoreUnits(units: UnitListItem[], q: Questionnaire): Candidate[] {
+export function scoreUnits(units: RecommendationUnit[], q: Questionnaire): Candidate[] {
   const budgetMin = q.budgetMin ?? 0;
   const normPriorities = q.priorities.map(normalizePriority);
 
@@ -67,6 +87,8 @@ export function scoreUnits(units: UnitListItem[], q: Questionnaire): Candidate[]
 
   const norm = (v: number, lo: number, hi: number) =>
     hi === lo ? 1 : Math.max(0, Math.min(1, (hi - v) / (hi - lo)));
+  const normAscending = (v: number, lo: number, hi: number) =>
+    hi === lo ? 1 : Math.max(0, Math.min(1, (v - lo) / (hi - lo)));
 
   const rents = units.map((u) => u.monthlyRent);
   const minRent = Math.min(...rents);
@@ -95,13 +117,29 @@ export function scoreUnits(units: UnitListItem[], q: Questionnaire): Candidate[]
       hardFail = true;
       reasons.push(`Capacity ${capacity} < household ${q.householdSize}`);
     }
-    if (q.preferredBedrooms && unit.bedrooms !== q.preferredBedrooms) {
+    if (q.preferredBedrooms !== undefined && unit.bedrooms !== q.preferredBedrooms) {
       hardFail = true;
       reasons.push(`Bedrooms ${unit.bedrooms} != ${q.preferredBedrooms}`);
     }
     if (q.moveInBy && unit.availableFrom && unit.availableFrom > q.moveInBy) {
       hardFail = true;
       reasons.push(`Available ${unit.availableFrom} after ${q.moveInBy}`);
+    }
+    if (q.minArea !== undefined && unit.areaSqm < q.minArea) {
+      hardFail = true;
+      reasons.push(`Area ${unit.areaSqm} m² is below the ${q.minArea} m² minimum`);
+    }
+    if (q.furnishing && q.furnishing !== "ANY" && unit.furnishing !== q.furnishing) {
+      hardFail = true;
+      reasons.push("Does not match the required furnishing level");
+    }
+    if (q.accessibilityRequired && unit.features?.accessible !== true) {
+      hardFail = true;
+      reasons.push("No verified step-free accessibility feature");
+    }
+    if (q.pets && unit.features?.pets_allowed !== true) {
+      hardFail = true;
+      reasons.push("Pets are not allowed");
     }
 
     if (hardFail) {
@@ -118,10 +156,8 @@ export function scoreUnits(units: UnitListItem[], q: Questionnaire): Candidate[]
           if (contribution > 0.6) reasons.push("Affordable rent");
           break;
         case "near_elevator":
-          if (unit.furnishing === "FULLY_FURNISHED" || unit.floorNumber <= (maxFloor + minFloor) / 2) {
-            contribution = 0.7;
-            reasons.push("Convenient floor");
-          }
+          contribution = Math.max(0, 1 - (featureNumber(unit, "elevator_distance") ?? 40) / 50);
+          if (contribution >= 0.6) reasons.push("Near the elevator");
           break;
         case "furnished":
           if (unit.furnishing === "FULLY_FURNISHED") {
@@ -132,20 +168,34 @@ export function scoreUnits(units: UnitListItem[], q: Questionnaire): Candidate[]
           }
           break;
         case "high_floor":
-          contribution = norm(unit.floorNumber, minFloor, maxFloor);
+          contribution = normAscending(unit.floorNumber, minFloor, maxFloor);
           if (unit.floorNumber >= (maxFloor + minFloor) / 2) reasons.push("Higher floor");
           break;
         case "quiet":
-          contribution = unit.floorNumber >= (maxFloor + minFloor) / 2 ? 0.6 : 0.4;
+          contribution = (featureNumber(unit, "quietness") ?? 1) / 5;
+          if (contribution >= 0.8) reasons.push("High quietness rating");
           break;
         case "city_view":
         case "natural_light":
-          contribution = norm(unit.floorNumber, minFloor, maxFloor) * 0.8 + 0.2;
+          contribution = normAscending(unit.floorNumber, minFloor, maxFloor) * 0.8 + 0.2;
           break;
         default:
-          contribution = featureOn(unit, p) ? 1 : 0.3;
+          contribution = featureOn(unit, p) ? 1 : 0;
       }
       score += (contribution * w) / totalWeight;
+    }
+
+    if (q.floorPreference && q.floorPreference !== "ANY") {
+      const midpoint = (maxFloor + minFloor) / 2;
+      const floorMatch = q.floorPreference === "HIGH"
+        ? unit.floorNumber >= midpoint
+        : q.floorPreference === "LOW"
+          ? unit.floorNumber <= midpoint
+          : Math.abs(unit.floorNumber - midpoint) <= 1;
+      if (floorMatch) {
+        score = Math.min(1, score + 0.08);
+        reasons.push(`${q.floorPreference.toLowerCase()}-floor preference`);
+      }
     }
 
     // Tie-breakers that always help a little.
@@ -154,6 +204,24 @@ export function scoreUnits(units: UnitListItem[], q: Questionnaire): Candidate[]
 
     return { unit, score: Math.round(score * 100), reasons: Array.from(new Set(reasons)), hardFail: false };
   });
+}
+
+/** Select a small result set that avoids returning three near-identical units. */
+export function diversifyCandidates(candidates: Candidate[], limit = 3): Candidate[] {
+  const selected: Candidate[] = [];
+  const usedTypes = new Set<string>();
+  for (const candidate of candidates) {
+    if (selected.length >= limit) break;
+    if (!usedTypes.has(candidate.unit.unitTypeCode)) {
+      selected.push(candidate);
+      usedTypes.add(candidate.unit.unitTypeCode);
+    }
+  }
+  for (const candidate of candidates) {
+    if (selected.length >= limit) break;
+    if (!selected.some((item) => item.unit.id === candidate.unit.id)) selected.push(candidate);
+  }
+  return selected;
 }
 
 export function rankCandidates(candidates: Candidate[]): Candidate[] {

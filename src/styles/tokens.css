@@ -1,18 +1,38 @@
-/* Vertica temporary minimalist black-and-white design tokens.
-   Editorial architectural portfolio + modern software dashboard. */
+/* Vertica brand system.
+   Cold architectural neutrals, botanical green, and one Manrope type family
+   across the public site, authentication, and operational portals. */
 :root {
-  --bg: #f7f7f5;
-  --surface: #ffffff;
-  --surface-inverse: #0b0b0b;
-  --text: #0b0b0b;
-  --text-inverse: #ffffff;
-  --muted: #6f6f6a;
-  --border: #d8d8d2;
-  --border-strong: #a5a59d;
-  --success: #1c6b3c;
-  --warning: #8a5a00;
-  --danger: #9f1d20;
+  color-scheme: light;
 
+  --bg: #eef1ed;
+  --surface: #f9faf7;
+  --surface-elevated: #ffffff;
+  --surface-subtle: #e5eae4;
+  --surface-inverse: #101813;
+  --surface-inverse-soft: #17221b;
+  --text: #101612;
+  --text-soft: #354139;
+  --text-inverse: #f5f8f4;
+  --muted: #687269;
+  --muted-strong: #505b52;
+  --border: #d2d9d1;
+  --border-strong: #9da99f;
+
+  --accent: #2a7a4b;
+  --accent-strong: #1e603a;
+  --accent-soft: #dfeee3;
+  --accent-quiet: #edf6ef;
+  --focus: #3d9660;
+  --success: #247345;
+  --success-soft: #e2f2e7;
+  --warning: #8a5a00;
+  --warning-soft: #fff2d4;
+  --danger: #a33236;
+  --danger-soft: #fbe7e7;
+  --info: #35677c;
+  --info-soft: #e5f0f4;
+
+  --radius-xs: 3px;
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 20px;
@@ -26,9 +46,48 @@
   --space-7: 48px;
   --space-8: 72px;
 
-  --shadow-subtle: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-subtle: 0 1px 2px rgb(9 20 13 / 0.05);
+  --shadow-card: 0 18px 52px rgb(9 20 13 / 0.08);
+  --shadow-float: 0 28px 80px rgb(5 14 8 / 0.18);
 
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  --type-body: var(--font-manrope), Arial, Helvetica, sans-serif;
   --font-serif: Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #0c120e;
+    --surface: #121a15;
+    --surface-elevated: #18221b;
+    --surface-subtle: #1c2820;
+    --surface-inverse: #eef3ef;
+    --surface-inverse-soft: #dfe9e1;
+    --text: #eef3ef;
+    --text-soft: #c3cdc5;
+    --text-inverse: #101612;
+    --muted: #9daaa0;
+    --muted-strong: #b4c0b7;
+    --border: #2b3a30;
+    --border-strong: #536258;
+
+    --accent: #76cf96;
+    --accent-strong: #95dfae;
+    --accent-soft: #203d2a;
+    --accent-quiet: #172a1e;
+    --focus: #8addaa;
+    --success: #79d79a;
+    --success-soft: #1b3825;
+    --warning: #edbe65;
+    --warning-soft: #3b2e16;
+    --danger: #ef8f92;
+    --danger-soft: #422225;
+    --info: #8fc9dd;
+    --info-soft: #1f343d;
+
+    --shadow-subtle: 0 1px 2px rgb(0 0 0 / 0.22);
+    --shadow-card: 0 18px 52px rgb(0 0 0 / 0.24);
+    --shadow-float: 0 28px 80px rgb(0 0 0 / 0.42);
+  }
 }
