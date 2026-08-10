@@ -6,6 +6,8 @@
 
 A modern, full-stack property management platform built for condominium administrators, tenants, and staff.
 
+[**Open the live Vertica demo**](https://vertica-residences.vercel.app)
+
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green?logo=supabase)
@@ -149,7 +151,7 @@ npm run dev
 
 No separate Render service is required for the current architecture: the repository contains one full-stack Next.js application, and its API routes run with the Vercel deployment. Add a Render service only if a long-running worker or independently deployed backend is introduced later.
 
-For the free presentation deployment, keep the Vercel-provided URL and use either Supabase's built-in Auth mailer or a verified Brevo single sender with `smtp-relay.brevo.com` on port `587`. No purchased domain is required for the classroom demo. Keep the SMTP key only in Supabase and never expose it through a `NEXT_PUBLIC_` variable. Free-provider rate limits still apply.
+For the free presentation deployment, use [`vertica-residences.vercel.app`](https://vertica-residences.vercel.app) and either Supabase's built-in Auth mailer or a verified Brevo single sender with `smtp-relay.brevo.com` on port `587`. No purchased domain is required for the classroom demo. Keep the SMTP key only in Supabase and never expose it through a `NEXT_PUBLIC_` variable. Free-provider rate limits still apply.
 
 ### Demo Accounts
 

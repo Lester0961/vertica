@@ -4,7 +4,7 @@ Audit date: 2026-08-10
 
 Environment: local Next.js application connected to the configured hosted Supabase project, followed by a production Vercel regression
 
-Deployment: https://vertica-mauve.vercel.app
+Deployment: https://vertica-residences.vercel.app
 
 Roles exercised: `PROPERTY_ADMIN`, `TENANT`, and `GUARD`
 
