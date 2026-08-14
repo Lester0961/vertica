@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRealtimeTables } from "@/components/realtime/RealtimeRefresh";
 
 interface GatePassVisitor {
   id: string;
@@ -17,7 +18,6 @@ interface GatePass {
   status: string;
   maxUses: number;
   useCount: number;
-  createdAt: string;
   visitors: GatePassVisitor[];
 }
 
@@ -26,67 +26,111 @@ interface UnitOption {
   publicLabel: string;
 }
 
+type GatePassForm = {
+  unitId: string;
+  validFrom: string;
+  validTo: string;
+  maxUses: string;
+  visitors: { visitorName: string; vehiclePlate: string }[];
+};
+
+function localDateTimeValue(date: Date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function toIsoTimestamp(value: string) {
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : value;
+}
+
+function statusTone(status: string) {
+  if (status === "ACTIVE") return "success";
+  if (status === "REVOKED") return "danger";
+  if (status === "EXPIRED") return "warning";
+  return "neutral";
+}
+
 export default function TenantGatePassesPage() {
   const [passes, setPasses] = useState<GatePass[]>([]);
   const [units, setUnits] = useState<UnitOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newCode, setNewCode] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    unitId: "",
-    validFrom: "",
-    validTo: "",
-    maxUses: "1",
-    visitors: [{ visitorName: "", vehiclePlate: "" }],
-  });
+  const [form, setForm] = useState<GatePassForm>({ unitId: "", validFrom: "", validTo: "", maxUses: "1", visitors: [{ visitorName: "", vehiclePlate: "" }] });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/v1/gate-passes/mine").then((r) => r.json()),
-      fetch("/api/v1/leases/me").then((r) => r.json()),
-    ]).then(([gpJson, leaseJson]) => {
-      if (gpJson.ok) setPasses(gpJson.data.passes ?? []);
-      const lease = leaseJson.ok ? leaseJson.data.lease : null;
+  const load = useCallback(async () => {
+    try {
+      const [passResponse, leaseResponse] = await Promise.all([
+        fetch("/api/v1/gate-passes/mine", { cache: "no-store" }),
+        fetch("/api/v1/leases/me", { cache: "no-store" }),
+      ]);
+      const [passJson, leaseJson] = await Promise.all([passResponse.json(), leaseResponse.json()]);
+      if (!passResponse.ok || !passJson.ok || !leaseResponse.ok || !leaseJson.ok) throw new Error("Gate-pass data could not be loaded.");
+      setPasses(passJson.data.passes ?? []);
+      const lease = leaseJson.data.lease;
       if (lease?.unitId) {
         const leasedUnit = { id: lease.unitId, publicLabel: lease.publicLabel };
         setUnits([leasedUnit]);
-        setForm((current) => ({ ...current, unitId: leasedUnit.id }));
+        setForm((current) => ({ ...current, unitId: current.unitId || leasedUnit.id }));
+      } else {
+        setUnits([]);
       }
-    }).finally(() => setLoading(false));
+      setError(null);
+    } catch (loadError) {
+      setError((loadError as Error).message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+  useRealtimeTables(["gate_passes"], load);
+
+  function openCreate() {
+    const start = new Date();
+    start.setSeconds(0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    setForm({
+      unitId: units[0]?.id ?? "",
+      validFrom: localDateTimeValue(start),
+      validTo: localDateTimeValue(end),
+      maxUses: "1",
+      visitors: [{ visitorName: "", vehiclePlate: "" }],
+    });
+    setError(null);
+    setShowCreate(true);
+  }
 
   async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch("/api/v1/gate-passes/mine", {
+      const response = await fetch("/api/v1/gate-passes/mine", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          unitId: String(data.get("unitId") ?? ""),
-          validFrom: String(data.get("validFrom") ?? ""),
-          validTo: String(data.get("validTo") ?? ""),
-          maxUses: parseInt(String(data.get("maxUses") ?? "1")) || 1,
-          visitors: form.visitors.filter((v) => v.visitorName.trim()),
+          unitId: form.unitId,
+          validFrom: toIsoTimestamp(form.validFrom),
+          validTo: toIsoTimestamp(form.validTo),
+          maxUses: Number(form.maxUses) || 1,
+          visitors: form.visitors.filter((visitor) => visitor.visitorName.trim()),
         }),
       });
-      const json = await res.json();
-      if (!json.ok) {
-        setError(json.error?.message ?? "Failed to create gate pass.");
-        return;
-      }
+      const json = await response.json();
+      if (!response.ok || !json.ok) throw new Error(json.error?.message ?? "Gate pass could not be created.");
       setNewCode(json.data.code);
       setShowCreate(false);
-      setForm({ unitId: units[0]?.id ?? "", validFrom: "", validTo: "", maxUses: "1", visitors: [{ visitorName: "", vehiclePlate: "" }] });
-      const gpRes = await fetch("/api/v1/gate-passes/mine");
-      const gpJson = await gpRes.json();
-      if (gpJson.ok) setPasses(gpJson.data.passes ?? []);
-    } catch {
-      setError("Network error.");
+      await load();
+    } catch (createError) {
+      setError((createError as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -94,191 +138,94 @@ export default function TenantGatePassesPage() {
 
   async function handleRevoke(passId: string) {
     if (!confirm("Revoke this gate pass?")) return;
+    setError(null);
     try {
       const response = await fetch(`/api/v1/gate-passes/mine/${passId}/revoke`, { method: "POST" });
       const json = await response.json();
       if (!response.ok || !json.ok) throw new Error(json.error?.message ?? "Gate pass could not be revoked.");
-      setPasses((prev) => prev.map((p) => (p.id === passId ? { ...p, status: "REVOKED" } : p)));
-    } catch {
-      setError("Gate pass could not be revoked. Refresh and try again.");
+      setPasses((current) => current.map((pass) => pass.id === passId ? { ...pass, status: "REVOKED" } : pass));
+    } catch (revokeError) {
+      setError((revokeError as Error).message);
     }
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">My Gate Passes</h1>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          {showCreate ? "Cancel" : "New Gate Pass"}
-        </button>
-      </div>
-
-      {newCode && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-          <div className="text-sm font-medium text-green-800">Gate pass created! Share this code with your visitor:</div>
-          <div className="mt-2 font-mono text-3xl tracking-[0.3em] text-green-900">{newCode}</div>
-          <button onClick={() => setNewCode(null)} className="mt-2 text-sm text-green-700 underline">Dismiss</button>
+    <div className="page-shell">
+      <header className="page-header flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Visitor access</p>
+          <h1>Gate passes</h1>
+          <p>Create time-bound visitor access for your leased residence. Codes are shown once and verified securely at the gate.</p>
         </div>
+        <button type="button" className="action-button" disabled={loading || units.length === 0} onClick={openCreate}>New gate pass</button>
+      </header>
+
+      {error && <p className="inline-feedback mb-4" data-tone="error" role="alert">{error}</p>}
+      {newCode && (
+        <section className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900" role="status">
+          <p className="eyebrow text-emerald-800">Gate pass created</p>
+          <h2 className="mt-2 text-base font-bold">Share this code with your visitor now.</h2>
+          <p className="mt-1 text-sm text-emerald-800">For security, Vertica stores only a cryptographic hash and will not show this code again.</p>
+          <div className="mt-4 font-mono text-3xl font-bold tracking-[0.28em]">{newCode}</div>
+          <button type="button" className="mt-4 text-sm font-semibold underline underline-offset-4" onClick={() => setNewCode(null)}>I have saved the code</button>
+        </section>
       )}
 
       {showCreate && (
-        <form onSubmit={handleCreate} className="rounded-xl border border-neutral-200 bg-white p-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="gate-pass-unit" className="block text-sm font-medium text-neutral-700">Unit</label>
-              <select
-                id="gate-pass-unit"
-                name="unitId"
-                required
-                value={form.unitId}
-                onChange={(e) => setForm({ ...form, unitId: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-              >
-                <option value="">Select unit...</option>
-                {units.map((u) => (
-                  <option key={u.id} value={u.id}>{u.publicLabel}</option>
-                ))}
+        <form onSubmit={handleCreate} className="surface-card mb-5 p-5">
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div><p className="eyebrow">New access window</p><h2 className="mt-1 text-lg font-bold">Set visitor details</h2></div>
+            <button type="button" className="action-button action-button--secondary" onClick={() => setShowCreate(false)}>Cancel</button>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="form-field">Unit
+              <select value={form.unitId} onChange={(event) => setForm((current) => ({ ...current, unitId: event.target.value }))} required>
+                <option value="">Select unit</option>
+                {units.map((unit) => <option key={unit.id} value={unit.id}>{unit.publicLabel}</option>)}
               </select>
-            </div>
-            <div>
-              <label htmlFor="gate-pass-max-uses" className="block text-sm font-medium text-neutral-700">Max uses</label>
-              <input
-                id="gate-pass-max-uses"
-                name="maxUses"
-                type="number"
-                min={1}
-                max={100}
-                value={form.maxUses}
-                onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="gate-pass-valid-from" className="block text-sm font-medium text-neutral-700">Valid from</label>
-              <input
-                id="gate-pass-valid-from"
-                name="validFrom"
-                type="datetime-local"
-                required
-                value={form.validFrom}
-                onChange={(e) => setForm({ ...form, validFrom: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label htmlFor="gate-pass-valid-to" className="block text-sm font-medium text-neutral-700">Valid to</label>
-              <input
-                id="gate-pass-valid-to"
-                name="validTo"
-                type="datetime-local"
-                required
-                value={form.validTo}
-                onChange={(e) => setForm({ ...form, validTo: e.target.value })}
-                className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-              />
-            </div>
+            </label>
+            <label className="form-field">Maximum entries
+              <input type="number" min={1} max={100} value={form.maxUses} onChange={(event) => setForm((current) => ({ ...current, maxUses: event.target.value }))} required />
+            </label>
+            <label className="form-field">Valid from
+              <input type="datetime-local" value={form.validFrom} onChange={(event) => setForm((current) => ({ ...current, validFrom: event.target.value }))} required />
+            </label>
+            <label className="form-field">Valid to
+              <input type="datetime-local" value={form.validTo} onChange={(event) => setForm((current) => ({ ...current, validTo: event.target.value }))} required />
+            </label>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-neutral-700">Visitors</label>
-            {form.visitors.map((v, i) => (
-              <div key={i} className="mt-2 flex gap-2">
-                <input
-                  aria-label={`Visitor ${i + 1} name`}
-                  required={i === 0}
-                  placeholder="Visitor name"
-                  value={v.visitorName}
-                  onChange={(e) => {
-                    const visitors = [...form.visitors];
-                    visitors[i] = { visitorName: e.target.value, vehiclePlate: visitors[i]!.vehiclePlate };
-                    setForm({ ...form, visitors });
-                  }}
-                  className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-                />
-                <input
-                  aria-label={`Visitor ${i + 1} plate`}
-                  placeholder="Plate (optional)"
-                  value={v.vehiclePlate}
-                  onChange={(e) => {
-                    const visitors = [...form.visitors];
-                    visitors[i] = { visitorName: visitors[i]!.visitorName, vehiclePlate: e.target.value };
-                    setForm({ ...form, visitors });
-                  }}
-                  className="w-32 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-                />
-                {form.visitors.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, visitors: form.visitors.filter((_, j) => j !== i) })}
-                    className="rounded-lg border border-neutral-200 px-2 text-sm text-neutral-500 hover:bg-neutral-50"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, visitors: [...form.visitors, { visitorName: "", vehiclePlate: "" }] })}
-              className="mt-2 text-sm text-blue-600 hover:underline"
-            >
-              + Add visitor
-            </button>
+          <div className="mt-5">
+            <p className="eyebrow">Visitors</p>
+            <div className="mt-3 grid gap-3">
+              {form.visitors.map((visitor, index) => (
+                <div key={index} className="grid gap-3 sm:grid-cols-[1fr_11rem_auto]">
+                  <label className="sr-only" htmlFor={`visitor-name-${index}`}>Visitor {index + 1} name</label>
+                  <input id={`visitor-name-${index}`} required={index === 0} placeholder="Visitor name" value={visitor.visitorName} onChange={(event) => setForm((current) => ({ ...current, visitors: current.visitors.map((item, itemIndex) => itemIndex === index ? { ...item, visitorName: event.target.value } : item) }))} />
+                  <label className="sr-only" htmlFor={`visitor-plate-${index}`}>Visitor {index + 1} plate</label>
+                  <input id={`visitor-plate-${index}`} placeholder="Vehicle plate (optional)" value={visitor.vehiclePlate} onChange={(event) => setForm((current) => ({ ...current, visitors: current.visitors.map((item, itemIndex) => itemIndex === index ? { ...item, vehiclePlate: event.target.value } : item) }))} />
+                  {form.visitors.length > 1 && <button type="button" className="action-button action-button--secondary" onClick={() => setForm((current) => ({ ...current, visitors: current.visitors.filter((_, itemIndex) => itemIndex !== index) }))}>Remove</button>}
+                </div>
+              ))}
+            </div>
+            <button type="button" className="mt-3 text-sm font-semibold text-emerald-800 underline underline-offset-4" onClick={() => setForm((current) => ({ ...current, visitors: [...current.visitors, { visitorName: "", vehiclePlate: "" }] }))}>Add another visitor</button>
           </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {submitting ? "Creating..." : "Create Gate Pass"}
-          </button>
+          <div className="form-actions mt-6"><button className="action-button" disabled={submitting}>{submitting ? "Creating..." : "Create gate pass"}</button></div>
         </form>
       )}
 
-      {loading ? (
-        <p className="text-sm text-neutral-500">Loading...</p>
-      ) : passes.length === 0 ? (
-        <p className="text-sm text-neutral-500">No gate passes yet.</p>
-      ) : (
-        <div className="space-y-3">
-          {passes.map((p) => (
-            <div key={p.id} className="rounded-xl border border-neutral-200 bg-white p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-medium text-neutral-900">{p.unitLabel}</span>
-                  <span className={`ml-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                    p.status === "ACTIVE" ? "bg-green-100 text-green-700" :
-                    p.status === "USED" ? "bg-blue-100 text-blue-700" :
-                    p.status === "REVOKED" ? "bg-red-100 text-red-700" :
-                    "bg-neutral-100 text-neutral-600"
-                  }`}>
-                    {p.status}
-                  </span>
-                </div>
-                {p.status === "ACTIVE" && (
-                  <button
-                    onClick={() => handleRevoke(p.id)}
-                    className="text-sm text-red-600 hover:underline"
-                  >
-                    Revoke
-                  </button>
-                )}
+      {loading ? <p className="text-sm text-neutral-500" role="status">Loading visitor access...</p> : passes.length === 0 ? <div className="empty-state">No gate passes have been created yet.</div> : (
+        <div className="grid gap-3">
+          {passes.map((pass) => (
+            <article key={pass.id} className="surface-card p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><p className="eyebrow">{pass.unitLabel}</p><h2 className="mt-1 text-base font-bold">Visitor access window</h2></div>
+                <span className={`status-chip status-chip--${statusTone(pass.status)}`}>{pass.status}</span>
               </div>
-              <div className="mt-2 text-sm text-neutral-500">
-                {new Date(p.validFrom).toLocaleString()} – {new Date(p.validTo).toLocaleString()} · {p.useCount}/{p.maxUses} uses
-              </div>
-              {p.visitors.length > 0 && (
-                <div className="mt-2 text-sm text-neutral-600">
-                  Visitors: {p.visitors.map((v) => `${v.visitorName}${v.vehiclePlate ? ` (${v.vehiclePlate})` : ""}`).join(", ")}
-                </div>
-              )}
-            </div>
+              <p className="mt-3 text-sm text-neutral-700">{new Date(pass.validFrom).toLocaleString()} to {new Date(pass.validTo).toLocaleString()}</p>
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-neutral-600"><span>{pass.useCount}/{pass.maxUses} entries used</span><span>{pass.visitors.map((visitor) => `${visitor.visitorName}${visitor.vehiclePlate ? ` (${visitor.vehiclePlate})` : ""}`).join(", ") || "No visitor recorded"}</span></div>
+              {pass.status === "ACTIVE" && <button type="button" className="mt-4 text-sm font-semibold text-red-700 underline underline-offset-4" onClick={() => void handleRevoke(pass.id)}>Revoke access</button>}
+            </article>
           ))}
         </div>
       )}
