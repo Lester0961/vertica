@@ -10,9 +10,11 @@ import {
   getUnitsByLabels,
   listAdminUnits,
   listPublicUnits,
+  getPublicBuildingLayout,
   updateAdminUnitStatus,
   type UnitFilters,
 } from "@/features/units/queries";
+import { getPublicBuildingVisualManifest, getPublicUnitVisualManifest } from "@/features/units/visuals";
 
 function num(v: string | null): number | undefined {
   if (v === null || v === "") return undefined;
@@ -55,6 +57,20 @@ async function propertyHandler() {
 
 async function unitTypesHandler() {
   return ok({ unitTypes: await getUnitTypes() });
+}
+
+async function buildingLayoutHandler() {
+  return ok({ layout: await getPublicBuildingLayout() });
+}
+
+async function buildingVisualsHandler() {
+  return ok({ manifest: await getPublicBuildingVisualManifest() });
+}
+
+async function unitVisualsHandler(ctx: ApiContext) {
+  const manifest = await getPublicUnitVisualManifest(ctx.params.publicLabel!);
+  if (!manifest) return fail("NOT_FOUND", "Unit visuals are not available.");
+  return ok({ manifest });
 }
 
 async function adminListHandler() {
@@ -137,6 +153,8 @@ async function compareHandler(ctx: ApiContext) {
 export function registerUnitRoutes(): void {
   register("GET", "public/property", propertyHandler);
   register("GET", "public/unit-types", unitTypesHandler);
+  register("GET", "public/building-layout", buildingLayoutHandler);
+  register("GET", "public/visuals/building", buildingVisualsHandler);
   register("GET", "public/units", listHandler);
   register("GET", "admin/units", adminListHandler);
   register("GET", "admin/units/options", adminOptionsHandler);
@@ -144,5 +162,6 @@ export function registerUnitRoutes(): void {
   register("PATCH", "admin/units/:id", adminUpdateHandler);
   register("PATCH", "admin/units/:id/details", adminDetailsHandler);
   register("GET", "public/units/:publicLabel", getHandler);
+  register("GET", "public/units/:publicLabel/visuals", unitVisualsHandler);
   register("POST", "compare", compareHandler);
 }

@@ -351,3 +351,34 @@ export async function getUnitsByLabels(labels: string[]): Promise<UnitDetail[]> 
   const results = await Promise.all(labels.map((l) => getPublicUnitByLabel(l)));
   return results.filter((u): u is UnitDetail => u !== null);
 }
+
+export interface PublicBuildingLayout {
+  building: { name: string };
+  floors: { floorNumber: number; floorLabel: string; slotCount: number }[];
+}
+
+/**
+ * Dimensional layout for the public 3D explorer: floor labels and the number of
+ * unit bays per floor. Counts include non-public units via the service role so
+ * the tower renders its full architecture — no occupancy data is returned.
+ */
+export async function getPublicBuildingLayout(): Promise<PublicBuildingLayout> {
+  const supabase = createServiceRoleClient();
+  const [buildings, floors, unitFloors] = await Promise.all([
+    supabase.from("buildings").select("id, name").eq("status", "ACTIVE").order("name").limit(1),
+    supabase.from("floors").select("id, floor_number, public_label").order("floor_number"),
+    supabase.from("units").select("floor_id"),
+  ]);
+  if (buildings.error || floors.error || unitFloors.error) throw new Error("Could not load the building layout.");
+
+  const slotCounts = new Map<string, number>();
+  for (const unit of unitFloors.data ?? []) {
+    slotCounts.set(unit.floor_id, (slotCounts.get(unit.floor_id) ?? 0) + 1);
+  }
+  return {
+    building: { name: buildings.data?.[0]?.name ?? "Vertica Residences" },
+    floors: (floors.data ?? [])
+      .map((floor) => ({ floorNumber: floor.floor_number, floorLabel: floor.public_label, slotCount: slotCounts.get(floor.id) ?? 0 }))
+      .filter((floor) => floor.slotCount > 0),
+  };
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <filter id="plaster">
+      <feTurbulence type="fractalNoise" baseFrequency="0.28" numOctaves="3" seed="31"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="table" tableValues="0 0.08"/></feComponentTransfer>
+    </filter>
+  </defs>
+  <rect width="256" height="256" fill="#eeebe3"/>
+  <rect width="256" height="256" filter="url(#plaster)" opacity="0.5"/>
+</svg>

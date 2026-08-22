@@ -24,10 +24,15 @@
     "db:apply:one": "tsx scripts/db-apply.ts --only=0016_demo_operations_completion.sql",
     "db:apply:reset": "tsx scripts/db-apply.ts --reset --seed",
     "seed:users": "tsx --env-file=.env.local scripts/seed-demo-users.ts",
+    "models:assets": "tsx scripts/fetch-building-materials.ts",
+    "models:generate": "tsx scripts/generate-visual-models.ts",
+    "models:inspect": "tsx scripts/inspect-visual-models.ts",
     "docs:dd": "tsx scripts/generate-data-dictionary.ts",
     "check:migrations": "tsx scripts/check-migration-order.ts"
   },
   "dependencies": {
+    "@react-three/drei": "10.7.8",
+    "@react-three/fiber": "9.7.0",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.8",
     "next": "16.3.0",
@@ -36,6 +41,7 @@
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
     "three": "^0.180.0",
+    "three-mesh-bvh": "0.9.14",
     "zod": "^4.1.12"
   },
   "devDependencies": {
