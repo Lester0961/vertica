@@ -94,9 +94,48 @@ function addTree(parent: THREE.Object3D, x: number, z: number, scale = 1) {
   const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(1.2 * scale, 2), materials.foliage);
   crown.position.y = 3 * scale;
   crown.scale.set(1, 1.15, 0.9);
-  tree.add(trunk, crown);
+  const crownLow = new THREE.Mesh(new THREE.IcosahedronGeometry(0.82 * scale, 1), materials.foliage);
+  crownLow.position.set(-0.25 * scale, 2.35 * scale, 0.18 * scale);
+  crownLow.scale.set(1.1, 0.9, 0.95);
+  tree.add(trunk, crown, crownLow);
   tree.position.set(x, 0, z);
   parent.add(tree);
+}
+
+function addStreetLight(parent: THREE.Object3D, x: number, z: number, scale = 1) {
+  const light = new THREE.Group();
+  light.name = `STREET_LIGHT_${x}_${z}`;
+  light.add(box("LIGHT_POST", [0.08 * scale, 2.7 * scale, 0.08 * scale], [0, 1.35 * scale, 0], materials.metal));
+  light.add(box("LIGHT_ARM", [0.55 * scale, 0.06 * scale, 0.06 * scale], [0.2 * scale, 2.65 * scale, 0], materials.metal));
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.12 * scale, 10, 8), materials.windowWarm);
+  lamp.position.set(0.45 * scale, 2.59 * scale, 0);
+  light.add(lamp);
+  light.position.set(x, 0, z);
+  parent.add(light);
+}
+
+function addCar(parent: THREE.Object3D, x: number, z: number, scale = 1) {
+  const car = new THREE.Group();
+  car.name = `DROP_OFF_CAR_${x}_${z}`;
+  car.add(box("CAR_BODY", [3.1 * scale, 0.42 * scale, 1.45 * scale], [0, 0.42 * scale, 0], materials.concreteDark));
+  car.add(box("CAR_CABIN", [1.55 * scale, 0.48 * scale, 1.2 * scale], [-0.15 * scale, 0.82 * scale, 0], materials.metal));
+  car.add(box("CAR_GLASS", [1.18 * scale, 0.28 * scale, 1.22 * scale], [-0.16 * scale, 0.88 * scale, 0], materials.glass));
+  for (const wheelZ of [-0.58, 0.58]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.28 * scale, 0.28 * scale, 0.12 * scale, 12), materials.metal);
+    wheel.rotation.x = Math.PI / 2;
+    wheel.position.set(-0.78 * scale, 0.29 * scale, wheelZ * scale);
+    car.add(wheel);
+  }
+  car.position.set(x, 0, z);
+  parent.add(car);
+}
+
+function addBalconyPlant(parent: THREE.Object3D, x: number, y: number, z: number, scale = 1) {
+  parent.add(box("BALCONY_PLANTER", [0.65 * scale, 0.28 * scale, 0.34 * scale], [x, y + 0.14 * scale, z], materials.soil));
+  const leaves = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28 * scale, 1), materials.foliage);
+  leaves.position.set(x, y + 0.48 * scale, z);
+  leaves.scale.set(1, 1.3, 0.8);
+  parent.add(leaves);
 }
 
 function createBuilding(): THREE.Scene {
@@ -117,8 +156,12 @@ function createBuilding(): THREE.Scene {
   architecture.add(box("ARCH_PODIUM_STONE_BAND", [width + 3.25, 0.7, depth + 2.2], [0, 0.35, -0.5], materials.tile));
   architecture.add(box("ARCH_LOBBY_GLASS", [20, 2.9, 0.18], [0, 2.25, depth / 2 + 0.55], materials.glass));
   architecture.add(box("ARCH_ENTRY_CANOPY", [10, 0.25, 5], [0, 4.35, depth / 2 + 3], materials.metal));
+  architecture.add(box("ARCH_ENTRY_SIGN", [5.6, 0.42, 0.14], [0, 3.4, depth / 2 + 0.68], materials.concreteDark));
+  architecture.add(box("ARCH_ENTRY_SIGN_LIGHT", [3.8, 0.04, 0.04], [0, 3.18, depth / 2 + 0.78], materials.windowWarm));
+  architecture.add(box("ARCH_ENTRY_STEPS", [12, 0.14, 1.15], [0, 0.08, depth / 2 + 1.3], materials.tile));
   architecture.add(instancedBoxes("ARCH_CANOPY_COLUMNS", [0.24, 4.1, 0.24], [[-4.4, 2.05, depth / 2 + 4.9], [4.4, 2.05, depth / 2 + 4.9]], materials.metal));
   architecture.add(instancedBoxes("ARCH_LOBBY_DOOR_FRAMES", [0.12, 2.8, 0.2], [[-3.1, 2.2, depth / 2 + 0.7], [0, 2.2, depth / 2 + 0.7], [3.1, 2.2, depth / 2 + 0.7]], materials.metal));
+  architecture.add(instancedBoxes("ARCH_LOBBY_PILASTERS", [0.22, 3.1, 0.22], [[-10.2, 1.55, depth / 2 + 0.62], [10.2, 1.55, depth / 2 + 0.62]], materials.concrete));
   architecture.add(box("ARCH_CORE", [4.8, lobbyHeight + floors.length * floorHeight + 2.2, 5], [0, (lobbyHeight + floors.length * floorHeight + 2.2) / 2, -3.2], materials.concrete));
 
   floors.forEach((floorNumber, floorIndex) => {
@@ -132,11 +175,27 @@ function createBuilding(): THREE.Scene {
     const centerY = y + floorHeight / 2;
     floor.add(instancedBoxes(`UNIT_SHELLS_F${floorNumber}`, [bayWidth, 2.85, 8.8], bayPositions.map((x) => [x, centerY, 0.7]), materials.concrete));
     floor.add(instancedBoxes(`WINDOWS_F${floorNumber}`, [bayWidth * 0.72, 1.85, 0.12], bayPositions.map((x) => [x, centerY + 0.15, depth / 2 + 0.18]), materials.windowWarm));
+    floor.add(instancedBoxes(`WINDOW_FRAMES_TOP_F${floorNumber}`, [bayWidth * 0.76, 0.07, 0.2], bayPositions.map((x) => [x, centerY + 1.13, depth / 2 + 0.29]), materials.metal));
+    floor.add(instancedBoxes(`WINDOW_FRAMES_BOTTOM_F${floorNumber}`, [bayWidth * 0.76, 0.07, 0.2], bayPositions.map((x) => [x, centerY - 0.83, depth / 2 + 0.29]), materials.metal));
+    floor.add(instancedBoxes(`WINDOW_FRAMES_SIDES_F${floorNumber}`, [0.07, 1.9, 0.2], bayPositions.flatMap((x) => [[x - bayWidth * 0.38, centerY + 0.15, depth / 2 + 0.29], [x + bayWidth * 0.38, centerY + 0.15, depth / 2 + 0.29]]), materials.metal));
     floor.add(instancedBoxes(`MULLIONS_V_F${floorNumber}`, [0.08, 1.9, 0.18], bayPositions.map((x) => [x, centerY + 0.15, depth / 2 + 0.28]), materials.metal));
     floor.add(instancedBoxes(`MULLIONS_H_F${floorNumber}`, [bayWidth * 0.72, 0.08, 0.18], bayPositions.map((x) => [x, centerY + 0.15, depth / 2 + 0.28]), materials.metal));
     floor.add(instancedBoxes(`BALCONIES_F${floorNumber}`, [bayWidth * 0.88, 0.18, 1.6], bayPositions.map((x) => [x, y + 0.12, depth / 2 + 0.95]), materials.concreteDark));
     floor.add(instancedBoxes(`RAILS_F${floorNumber}`, [bayWidth * 0.84, 1.05, 0.06], bayPositions.map((x) => [x, y + 0.7, depth / 2 + 1.75]), materials.glass));
+    floor.add(instancedBoxes(`RAIL_POSTS_F${floorNumber}`, [0.06, 1.1, 0.06], bayPositions.flatMap((x) => [[x - bayWidth * 0.4, y + 0.7, depth / 2 + 1.75], [x + bayWidth * 0.4, y + 0.7, depth / 2 + 1.75]]), materials.metal));
+    floor.add(instancedBoxes(`CORRIDOR_RAIL_F${floorNumber}`, [width - 2.2, 0.9, 0.06], [[0, y + 0.62, -depth / 2 - 0.08]], materials.glass));
+    const sideWindowPositions: [number, number, number][] = [
+      [-width / 2 - 0.08, centerY + 0.1, -3.1],
+      [-width / 2 - 0.08, centerY + 0.1, 2.4],
+      [width / 2 + 0.08, centerY + 0.1, -3.1],
+      [width / 2 + 0.08, centerY + 0.1, 2.4],
+    ];
+    floor.add(instancedBoxes(`SIDE_WINDOWS_F${floorNumber}`, [0.12, 1.42, 1.55], sideWindowPositions, materials.windowWarm));
     floor.add(instancedBoxes(`BALCONY_DIVIDERS_F${floorNumber}`, [0.1, 2.45, 1.55], [-14.2, -7.25, 0, 7.25, 14.2].map((x) => [x, centerY, depth / 2 + 0.98]), materials.concreteDark));
+
+    bayPositions.forEach((x, index) => {
+      if (index % 2 === floorIndex % 2) addBalconyPlant(floor, x + bayWidth * 0.25, y + 0.24, depth / 2 + 0.9, 0.9);
+    });
 
     for (let bay = 1; bay <= 4; bay += 1) {
       const x = (bay - 2.5) * (bayWidth + 0.7);
@@ -153,6 +212,13 @@ function createBuilding(): THREE.Scene {
   architecture.add(box("ARCH_ROOF", [width + 2.2, 0.45, depth + 1.2], [0, roofY + 0.2, 0], materials.concreteDark));
   architecture.add(box("ARCH_ROOF_OVERHANG", [width + 5, 0.35, depth + 4], [0, roofY + 2.4, 0.6], materials.metal));
   architecture.add(box("ARCH_ROOF_HOUSE", [7, 2.8, 5], [-4, roofY + 1.6, -1.8], materials.concrete));
+  architecture.add(box("ARCH_ROOF_TERRACE", [12, 0.12, 4.5], [7, roofY + 0.5, 1.2], materials.tile));
+  architecture.add(instancedBoxes("ARCH_ROOF_PARAPET", [12, 0.58, 0.16], [[7, roofY + 0.78, -1.1], [7, roofY + 0.78, 3.5]], materials.concreteDark));
+  architecture.add(box("ARCH_ROOF_MECHANICAL_A", [2.4, 1.35, 1.8], [5.2, roofY + 1.15, 1.5], materials.metal));
+  architecture.add(box("ARCH_ROOF_MECHANICAL_B", [1.5, 1.1, 1.5], [8.2, roofY + 1.02, 2.6], materials.concreteDark));
+  const waterTank = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 1.8, 16), materials.metal);
+  waterTank.position.set(-1.8, roofY + 3.35, -1.8);
+  architecture.add(waterTank);
 
   for (const x of [-11.5, -4, 4, 11.5]) {
     architecture.add(box(`FIN_${x}`, [0.32, floors.length * floorHeight + 1.2, 0.9], [x, lobbyHeight + floors.length * floorHeight / 2, depth / 2 + 0.62], materials.concreteDark));
@@ -163,7 +229,13 @@ function createBuilding(): THREE.Scene {
   landscape.add(box("SITE_GROUND", [70, 0.16, 52], [0, -0.1, 5], materials.ground));
   landscape.add(box("ENTRY_PLAZA", [32, 0.08, 11], [0, 0.02, 12.5], materials.tile));
   landscape.add(box("ENTRY_WALK", [7, 0.085, 16], [0, 0.04, 20], materials.tile));
+  landscape.add(box("DROP_OFF_CURB", [32, 0.18, 0.22], [0, 0.12, 7.2], materials.concreteDark));
+  landscape.add(box("ENTRY_WALK_EDGE_A", [0.2, 0.12, 16], [-3.6, 0.09, 20], materials.concreteDark));
+  landscape.add(box("ENTRY_WALK_EDGE_B", [0.2, 0.12, 16], [3.6, 0.09, 20], materials.concreteDark));
   [-18, -10, 10, 18].forEach((x) => addTree(landscape, x, 15 + Math.abs(x) * 0.12, 1.15));
+  [-12, 12].forEach((x) => addStreetLight(landscape, x, 9.5, 1));
+  addCar(landscape, -8.3, 10.2, 1.05);
+  addCar(landscape, 8.3, 10.2, 1.05);
 
   scene.add(architecture, landscape);
   return scene;

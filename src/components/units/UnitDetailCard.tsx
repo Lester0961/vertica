@@ -12,8 +12,7 @@ function featureValue(f: UnitDetail["features"][number]): string {
 
 export function UnitDetailCard({ unit }: { unit: UnitDetail }) {
   return (
-    <article className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-      <div className="mb-6"><UnitMediaViewer unit={unit} /></div>
+    <article className="rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-2xl font-semibold text-neutral-900">{unit.publicLabel}</h1>
         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
@@ -23,6 +22,8 @@ export function UnitDetailCard({ unit }: { unit: UnitDetail }) {
       <p className="mt-1 text-neutral-600">
         {unit.buildingName} · Floor {unit.floorNumber} ({unit.floorLabel}) · {unit.unitTypeName}
       </p>
+
+      <div className="my-6"><UnitMediaViewer unit={unit} /></div>
 
       <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Stat label="Monthly rent" value={formatPeso(unit.monthlyRent)} highlight />

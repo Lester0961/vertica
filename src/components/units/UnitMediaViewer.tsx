@@ -3,24 +3,26 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { UnitDetail } from "@/features/units/queries";
-import { InteriorExperience3DLazy } from "@/components/units/three/lazy";
+import dynamic from "next/dynamic";
+import { Unit204FloorPlan } from "./Unit204FloorPlan";
+const ResidenceViewer = dynamic(() => import("./three/ResidenceViewer"), { ssr: false, loading: () => <div className="flex h-[400px] items-center justify-center rounded-xl bg-neutral-100" role="status">Preparing your residence…</div> });
 
-type MediaMode = "photo" | "three";
+type MediaMode = "photo" | "three" | "plan";
 
 export function UnitMediaViewer({ unit }: { unit: UnitDetail }) {
-  const [mode, setMode] = useState<MediaMode>("photo");
-  const showcase = unit.publicLabel === "Unit 204";
+  const [mode, setMode] = useState<MediaMode>(unit.publicLabel === "Unit 204" ? "plan" : "three");
 
   return (
     <section aria-label={`${unit.publicLabel} media`}>
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-neutral-900">Explore this residence</h2>
           <p className="mt-1 text-xs text-neutral-500">
-            {showcase ? "Unit 204 includes the polished staged room experience." : "This unit uses the prototype room experience."}
+            See the layout from above, or explore each room at eye level.
           </p>
         </div>
         <div className="flex overflow-hidden rounded-lg border border-neutral-300" role="tablist" aria-label="Unit media">
+          {unit.publicLabel === "Unit 204" && <button type="button" role="tab" aria-selected={mode === "plan"} onClick={()=>setMode("plan")} className={mode === "plan" ? "bg-emerald-800 px-3 py-2 text-xs font-semibold text-white" : "px-3 py-2 text-xs font-semibold"}>2D floor plan</button>}
           <button
             type="button"
             role="tab"
@@ -37,13 +39,13 @@ export function UnitMediaViewer({ unit }: { unit: UnitDetail }) {
             onClick={() => setMode("three")}
             className={mode === "three" ? "bg-emerald-800 px-3 py-2 text-xs font-semibold text-white" : "bg-white px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"}
           >
-            {showcase ? "View 3D room" : "3D prototype"}
+            3D tour
           </button>
         </div>
       </div>
 
       <div role="tabpanel">
-        {mode === "photo" ? (
+        {mode === "plan" ? <Unit204FloorPlan /> : mode === "photo" ? (
           <div className="relative h-[430px] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
             <Image
               src="/images/vertica/vertica-residence.webp"
@@ -58,7 +60,7 @@ export function UnitMediaViewer({ unit }: { unit: UnitDetail }) {
             </p>
           </div>
         ) : (
-          <InteriorExperience3DLazy key={unit.id} unit={unit} />
+          <ResidenceViewer key={unit.id} unit={unit} />
         )}
       </div>
     </section>

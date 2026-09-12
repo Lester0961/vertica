@@ -12,7 +12,7 @@ export async function generateMetadata({
   params: Promise<{ publicLabel: string }>;
 }): Promise<Metadata> {
   const { publicLabel } = await params;
-  return { title: `Unit ${decodeURIComponent(publicLabel)}` };
+  return { title: decodeURIComponent(publicLabel) };
 }
 
 export default async function UnitDetailPage({
@@ -25,7 +25,7 @@ export default async function UnitDetailPage({
   if (!unit) notFound();
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-10">
+    <main className="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-10">
       <Link href="/units" className="text-sm text-neutral-500 hover:text-neutral-700">
         ← All units
       </Link>

@@ -10,6 +10,8 @@ export interface InteriorSceneOptions {
   orientationDeg?: number;
   balcony?: boolean;
   prefersDark?: boolean;
+  cutaway?: boolean;
+  hideExterior?: boolean;
 }
 
 export interface InteriorSceneResult {
@@ -98,9 +100,21 @@ function buildWall(wall: FloorPlan["walls"][number], materials: MaterialSet): TH
       const pane = box(width, windowHeight, 0.03, materials.glass, (start + end) / 2, sill + windowHeight / 2, 0);
       pane.castShadow = false;
       group.add(pane);
+      group.add(
+        box(0.06, windowHeight + 0.12, 0.07, materials.metal, start + 0.04, sill + windowHeight / 2, 0),
+        box(0.06, windowHeight + 0.12, 0.07, materials.metal, end - 0.04, sill + windowHeight / 2, 0),
+        box(width + 0.08, 0.06, 0.07, materials.metal, (start + end) / 2, sill - 0.02, 0),
+        box(width + 0.08, 0.06, 0.07, materials.metal, (start + end) / 2, sill + windowHeight + 0.02, 0),
+      );
+      if (width > 1.2) group.add(box(0.045, windowHeight, 0.07, materials.metal, (start + end) / 2, sill + windowHeight / 2, 0));
     } else {
       // Door: header above the opening only.
       group.add(box(width, WALL_HEIGHT - 2.05, WALL_THICKNESS, materials.wall, (start + end) / 2, 2.05 + (WALL_HEIGHT - 2.05) / 2, 0));
+      group.add(
+        box(0.07, 2.1, 0.07, materials.woodDark, start + 0.04, 1.05, 0),
+        box(0.07, 2.1, 0.07, materials.woodDark, end - 0.04, 1.05, 0),
+        box(width + 0.08, 0.07, 0.07, materials.woodDark, (start + end) / 2, 2.08, 0),
+      );
     }
     cursor = end;
   });
@@ -122,7 +136,7 @@ function buildFurniture(item: FurnitureItem, materials: MaterialSet): THREE.Grou
       group.add(box(w, 0.9, 0.09, materials.woodDark, 0, 0.55, -d / 2 + 0.045));
       const pillows = single ? 1 : 2;
       for (let index = 0; index < pillows; index += 1) {
-        group.add(box(w / pillows - 0.14, 0.1, 0.42, materials.porcelain, (index - (pillows - 1) / 2) * (w / pillows), 0.48, -d / 2 + 0.32));
+        group.add(box(w / pillows - 0.14, 0.1, 0.42, materials.linen, (index - (pillows - 1) / 2) * (w / pillows), 0.48, -d / 2 + 0.32));
       }
       const throwBlanket = box(w - 0.06, 0.03, d * 0.4, single ? materials.accent : materials.fabric, 0, 0.45, d / 2 - d * 0.22);
       group.add(throwBlanket);
@@ -133,6 +147,12 @@ function buildFurniture(item: FurnitureItem, materials: MaterialSet): THREE.Grou
       group.add(box(w, 0.42, 0.16, materials.fabric, 0, 0.55, -d / 2 + 0.08));
       group.add(box(0.16, 0.3, d, materials.fabric, -w / 2 + 0.08, 0.42, 0));
       group.add(box(0.16, 0.3, d, materials.fabric, w / 2 - 0.08, 0.42, 0));
+      group.add(
+        box(w / 2 - 0.18, 0.13, Math.max(0.3, d * 0.68), materials.linen, -w / 4, 0.45, 0.04),
+        box(w / 2 - 0.18, 0.13, Math.max(0.3, d * 0.68), materials.linen, w / 4, 0.45, 0.04),
+        box(0.08, 0.16, 0.08, materials.woodDark, -w / 2 + 0.24, 0.08, d / 2 - 0.16),
+        box(0.08, 0.16, 0.08, materials.woodDark, w / 2 - 0.24, 0.08, d / 2 - 0.16),
+      );
       break;
     case "coffeeTable":
       group.add(box(w, 0.04, d, materials.woodDark, 0, 0.34, 0));
@@ -165,9 +185,12 @@ function buildFurniture(item: FurnitureItem, materials: MaterialSet): THREE.Grou
     case "kitchenCounter":
       group.add(box(w, 0.82, d, materials.porcelain, 0, 0.41, 0));
       group.add(box(w + 0.04, 0.04, d + 0.04, materials.woodDark, 0, 0.86, 0));
+      group.add(box(w - 0.12, 0.42, 0.035, materials.woodDark, 0, 0.38, d / 2 + 0.02));
+      group.add(box(w - 0.12, 0.035, 0.04, materials.metal, 0, 0.58, d / 2 + 0.04));
       break;
     case "stove":
       group.add(box(w, 0.88, d, materials.metal, 0, 0.44, 0));
+      group.add(box(w + 0.04, 0.04, d + 0.04, materials.screen, 0, 0.9, 0));
       [-1, 1].forEach((sideX) => {
         [-1, 1].forEach((sideZ) => {
           group.add(box(0.14, 0.015, 0.14, materials.screen, sideX * w * 0.22, 0.885, sideZ * d * 0.2));
@@ -177,20 +200,26 @@ function buildFurniture(item: FurnitureItem, materials: MaterialSet): THREE.Grou
     case "fridge":
       group.add(box(w, 1.75, d, materials.metal, 0, 0.875, 0));
       group.add(box(0.04, 0.7, 0.05, materials.screen, w / 2 - 0.09, 1.15, d / 2 + 0.01));
+      group.add(box(0.04, 1.35, 0.05, materials.metal, w / 2 - 0.12, 0.88, d / 2 + 0.03));
       break;
     case "toilet":
       group.add(box(w, 0.4, d * 0.6, materials.porcelain, 0, 0.2, d * 0.15));
       group.add(box(w, 0.52, d * 0.35, materials.porcelain, 0, 0.26, -d / 2 + 0.08));
+      group.add(new THREE.Mesh(new THREE.CylinderGeometry(w * 0.46, w * 0.46, 0.05, 16), materials.porcelain));
+      group.children.at(-1)!.position.set(0, 0.42, d * 0.15);
       break;
     case "shower": {
       group.add(box(w, 0.06, d, materials.tile, 0, 0.03, 0));
       group.add(box(w, 1.9, 0.03, materials.glass, 0, 1.0, -d / 2 + 0.015));
       group.add(box(0.03, 1.9, d, materials.glass, -w / 2 + 0.015, 1.0, 0));
+      group.add(box(0.05, 0.05, 0.42, materials.metal, 0, 1.9, d / 2 - 0.12));
       break;
     }
     case "sink":
       group.add(box(w, 0.78, d, materials.woodDark, 0, 0.39, 0));
       group.add(box(w - 0.1, 0.06, d - 0.1, materials.porcelain, 0, 0.81, 0));
+      group.add(box(0.04, 0.28, 0.04, materials.metal, 0, 0.98, -d / 2 + 0.06));
+      group.add(box(0.22, 0.04, 0.04, materials.metal, 0.09, 1.1, -d / 2 + 0.06));
       break;
     case "tvUnit":
       group.add(box(w, 0.4, d, materials.woodDark, 0, 0.2, 0));
@@ -230,10 +259,33 @@ export function buildInteriorScene(plan: FloorPlan, options: InteriorSceneOption
   });
 
   // Walls with door/window openings.
-  plan.walls.forEach((wall) => group.add(buildWall(wall, materials)));
+  plan.walls.forEach((wall) => {
+    const mesh = buildWall(wall, materials);
+    if (options.cutaway) mesh.scale.y = 0.22;
+    group.add(mesh);
+  });
 
   // Furniture for the unit's furnishing level.
   furnitureForLevel(plan, options.furnishing).forEach((item) => group.add(buildFurniture(item, materials)));
+
+  // A recessed balcony is already part of this plan, not an extra slab outside it.
+  const recessedBalcony = plan.rooms.find(room => room.id === "balcony");
+  if (recessedBalcony) {
+    const room = recessedBalcony;
+    group.add(box(room.w, 1.1, .04, materials.glass, room.x + room.w / 2, .55, room.z));
+    group.add(box(room.w, .05, .06, materials.metal, room.x + room.w / 2, 1.12, room.z));
+    for (const x of [room.x + .05, room.x + room.w - .05]) group.add(box(.04, 1.1, .04, materials.metal, x, .55, room.z));
+    // Sliding glass access: leave the centre open for the walkthrough.
+    for (const x of [room.x + .3, room.x + room.w - .3]) group.add(box(.5, 2.05, .025, materials.glass, x, 1.025, room.z + room.d));
+    const laundry = plan.rooms.find(item => item.id === "laundry");
+    if (laundry) {
+      const washer = box(.65,.85,.65,materials.porcelain,laundry.x+laundry.w-.45,.425,laundry.z+laundry.d-.45);
+      group.add(washer);
+      const door = new THREE.Mesh(new THREE.TorusGeometry(.19,.025,8,24), materials.metal);
+      door.position.set(washer.position.x,.43,washer.position.z-.33);
+      group.add(door);
+    }
+  }
 
   // Balcony off the window face.
   if (options.balcony) {
@@ -256,7 +308,7 @@ export function buildInteriorScene(plan: FloorPlan, options: InteriorSceneOption
   // Soft exterior context visible through the windows.
   const ground = box(60, 0.06, 44, materials.exterior, 0, -0.26, 6);
   ground.castShadow = false;
-  group.add(ground);
+  if (!options.hideExterior) group.add(ground);
   [
     { x: -14, z: 16, w: 4, h: 7, d: 4 },
     { x: 6, z: 20, w: 5, h: 10, d: 4 },
@@ -265,18 +317,32 @@ export function buildInteriorScene(plan: FloorPlan, options: InteriorSceneOption
   ].forEach((building) => {
     const mesh = box(building.w, building.h, building.d, materials.exterior, building.x, building.h / 2 - 0.2, building.z);
     mesh.castShadow = false;
-    group.add(mesh);
+    if (!options.hideExterior) group.add(mesh);
   });
 
   // Ceiling + light strips (walkthrough mode only).
   const ceilingGroup = new THREE.Group();
   const ceiling = box(plan.overallW, 0.08, plan.overallD, materials.wall, 0, WALL_HEIGHT + 0.04, 0);
   ceiling.castShadow = false;
-  ceilingGroup.add(ceiling);
+  if (recessedBalcony) {
+    ceiling.geometry.dispose();
+    plan.rooms.filter(room=>room.id!=="balcony").forEach(room=>ceilingGroup.add(box(room.w,.08,room.d,materials.wall,room.x+room.w/2,WALL_HEIGHT+.04,room.z+room.d/2)));
+  } else ceilingGroup.add(ceiling);
   [-plan.overallW / 4, plan.overallW / 4].forEach((x) => {
     const strip = box(plan.overallW * 0.3, 0.03, 0.12, materials.glass, x, WALL_HEIGHT - 0.02, 0);
     strip.castShadow = false;
     ceilingGroup.add(strip);
+  });
+  [-2.8, 2.2].forEach((x, index) => {
+    const fixture = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.05, 16), materials.metal);
+    fixture.position.set(x, WALL_HEIGHT, index === 0 ? -1.4 : 1.2);
+    ceilingGroup.add(fixture);
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), materials.glass);
+    glow.position.set(x, WALL_HEIGHT - 0.06, index === 0 ? -1.4 : 1.2);
+    ceilingGroup.add(glow);
+    const light = new THREE.PointLight(0xffdfb2, 1.1, 5.5, 2);
+    light.position.set(x, WALL_HEIGHT - 0.12, index === 0 ? -1.4 : 1.2);
+    ceilingGroup.add(light);
   });
   ceilingGroup.visible = false;
   group.add(ceilingGroup);
