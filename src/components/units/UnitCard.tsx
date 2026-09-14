@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { formatArea, formatDate, formatPeso } from "@/lib/utils/format";
+import { getUnitImage } from "@/features/units/unitImages";
 
 export interface UnitCardData {
   publicLabel: string;
@@ -11,11 +13,21 @@ export interface UnitCardData {
   bedrooms: number;
   bathrooms: number;
   availableFrom: string | null;
+  unitTypeCode?: string;
+  floorNumber?: number;
 }
 
 export function UnitCard({ unit, badge }: { unit: UnitCardData; badge?: string }) {
+  const image = getUnitImage({
+    publicLabel: unit.publicLabel,
+    unitTypeCode: unit.unitTypeCode,
+    unitTypeName: unit.unitTypeName,
+    floorNumber: unit.floorNumber,
+  });
+
   return (
     <article
+      className="unit-card"
       style={{
         background: "var(--surface)",
         border: "1px solid var(--border)",
@@ -25,19 +37,14 @@ export function UnitCard({ unit, badge }: { unit: UnitCardData; badge?: string }
         flexDirection: "column",
       }}
     >
-      <div
-        aria-hidden
-        style={{
-          aspectRatio: "4 / 3",
-          background: "linear-gradient(135deg, #ececea, #f7f7f5)",
-          display: "grid",
-          placeItems: "center",
-          color: "var(--border-strong)",
-          fontSize: 13,
-          letterSpacing: "0.1em",
-        }}
-      >
-        {unit.unitTypeName.toUpperCase()}
+      <div className="unit-card-media">
+        <Image
+          src={image.src}
+          alt={image.alt}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+        />
+        <span className="unit-card-media-label">{unit.unitTypeName}</span>
       </div>
       <div style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>

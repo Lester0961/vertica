@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { NavigationShortcuts, PUBLIC_SHORTCUTS } from "@/components/navigation/NavigationShortcuts";
 
 const LINKS = [
-  { href: "/units", label: "Residences" },
-  { href: "/explore", label: "Building map" },
-  { href: "/amenities", label: "Amenities" },
-  { href: "/recommend", label: "Find my unit" },
-  { href: "/inquiry", label: "Inquire" },
+  { href: "/units", label: "Residences", keys: "G R" },
+  { href: "/explore", label: "Building map", keys: "G B" },
+  { href: "/amenities", label: "Amenities", keys: "G A" },
+  { href: "/recommend", label: "Find my unit", keys: "G F" },
+  { href: "/inquiry", label: "Inquire", keys: "G I" },
 ];
 
 export function PublicHeader() {
@@ -41,17 +42,21 @@ export function PublicHeader() {
             <Link
               key={link.href}
               href={link.href}
+              aria-keyshortcuts={link.keys}
               aria-current={pathname.startsWith(link.href) ? "page" : undefined}
               onClick={() => setOpen(false)}
             >
-              {link.label}
+              <span>{link.label}</span>
             </Link>
           ))}
           <Link href="/login" className="public-mobile-login" onClick={() => setOpen(false)}>Portal login</Link>
         </nav>
         <div className="public-actions">
+          <NavigationShortcuts items={PUBLIC_SHORTCUTS} onNavigate={() => setOpen(false)} />
           <Link href="/login" className="public-login">Portal login</Link>
-          <Link href="/units" className="public-cta">View availability <span aria-hidden>→</span></Link>
+          <Link href="/units" className="public-cta" aria-label="View availability">
+            <span className="public-cta-label">View availability</span><span aria-hidden>→</span>
+          </Link>
         </div>
         <button
           type="button"

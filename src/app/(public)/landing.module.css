@@ -122,6 +122,7 @@
 .hero h1 {
   max-width: 850px;
   margin: 20px 0 0;
+  color: #fff;
   font-size: clamp(3.6rem, 7.4vw, 7.6rem);
   font-weight: 520;
   letter-spacing: -0.07em;
@@ -195,13 +196,13 @@
 
 .availabilityCard strong { font-size: 1.02rem; font-weight: 680; }
 .availabilityCard a { color: rgb(255 255 255 / 0.74); font-size: .78rem; font-weight: 700; text-decoration: none; }
-.availabilityLoading { color: rgb(255 255 255 / .56); font-size: .75rem; }
+.availabilityLoading { color: rgb(255 255 255 / .72); font-size: .75rem; }
 
 .liveSignal {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: rgb(255 255 255 / 0.62);
+  color: rgb(255 255 255 / 0.76);
   font-size: .68rem;
   font-weight: 750;
   letter-spacing: .13em;
@@ -425,13 +426,13 @@
 .matching .container { position: relative; display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(60px, 10vw, 150px); }
 .matching .eyebrow { color: #75cb94; }
 .matching h2 { font-size: clamp(3rem, 5.5vw, 5.7rem); }
-.matchingIntro > p:not(.eyebrow) { max-width: 500px; margin: 28px 0 0; color: rgb(244 247 242 / .62); line-height: 1.7; }
+.matchingIntro > p:not(.eyebrow) { max-width: 500px; margin: 28px 0 0; color: rgb(244 247 242 / .74); line-height: 1.7; }
 .matchingIntro .buttonLight { margin-top: 36px; }
 .matchingSteps { margin: 0; padding: 0; list-style: none; }
 .matchingSteps li { display: grid; grid-template-columns: 56px 1fr; gap: 24px; border-top: 1px solid rgb(255 255 255 / .18); padding: 28px 0; }
 .matchingSteps > li > span { color: #75cb94; font-size: .68rem; font-weight: 750; letter-spacing: .11em; }
 .matchingSteps h3 { margin: 0; font-size: 1.28rem; font-weight: 570; letter-spacing: -.025em; }
-.matchingSteps p { max-width: 540px; margin: 10px 0 0; color: rgb(244 247 242 / .58); font-size: .86rem; line-height: 1.65; }
+.matchingSteps p { max-width: 540px; margin: 10px 0 0; color: rgb(244 247 242 / .7); font-size: .86rem; line-height: 1.65; }
 
 .layouts { background: var(--landing-bg); }
 .layoutsHeader { display: grid; grid-template-columns: .42fr 1fr; gap: 80px; align-items: start; }
@@ -472,7 +473,7 @@
 .inquiry h2 { font-size: clamp(3.2rem, 6.4vw, 6.5rem); }
 .inquiryContent > p:not(.eyebrow) { max-width: 590px; margin: 26px auto 0; color: rgb(255 255 255 / .7); font-size: 1rem; line-height: 1.7; }
 .inquiryContent > div { display: flex; margin-top: 34px; justify-content: center; flex-wrap: wrap; gap: 10px; }
-.inquiryContent small { display: block; margin-top: 24px; color: rgb(255 255 255 / .48); font-size: .66rem; }
+.inquiryContent small { display: block; margin-top: 24px; color: rgb(255 255 255 / .68); font-size: .66rem; }
 
 @keyframes hero-aperture {
   from { opacity: 1; clip-path: inset(12% 14% round 18px); }
@@ -481,12 +482,12 @@
 }
 
 @keyframes hero-copy-in {
-  from { opacity: 0; transform: translateY(28px); }
+  from { opacity: 1; transform: translateY(28px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes availability-in {
-  from { opacity: 0; transform: translate3d(var(--hero-card-x), calc(var(--hero-card-y) + 28px), 110px); }
+  from { opacity: 1; transform: translate3d(var(--hero-card-x), calc(var(--hero-card-y) + 28px), 110px); }
   to { opacity: 1; transform: translate3d(var(--hero-card-x), var(--hero-card-y), 110px); }
 }
 
@@ -511,7 +512,7 @@
 }
 
 @keyframes reveal-up {
-  from { opacity: .05; transform: translateY(56px); }
+  from { opacity: 1; transform: translateY(56px); }
   to { opacity: 1; transform: translateY(0); }
 }
 

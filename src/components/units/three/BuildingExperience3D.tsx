@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { Bounds, ContactShadows, Environment, OrbitControls, useBounds, useGLTF, useTexture } from "@react-three/drei";
@@ -246,6 +246,7 @@ function BuildingModel({
 }
 
 export function BuildingExperience3D(props: Building3DProps) {
+  const viewerRef = useRef<HTMLDivElement>(null);
   const [modelUrl, setModelUrl] = useState(LOCAL_BUILDING_MODEL);
   const [posterUrl, setPosterUrl] = useState(LOCAL_BUILDING_POSTER);
   const [ready, setReady] = useState(false);
@@ -274,10 +275,15 @@ export function BuildingExperience3D(props: Building3DProps) {
   const height = props.height ?? 520;
   const fallback = <Building3D {...props} />;
   const handleReady = useCallback(() => setReady(true), []);
+  const handleViewerKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.target instanceof HTMLButtonElement) return;
+    if (event.key.toLowerCase() === "e") { event.preventDefault(); setExploded((value) => !value); }
+    else if (event.key.toLowerCase() === "r") { event.preventDefault(); setExploded(false); setResetToken((value) => value + 1); }
+  };
 
   return (
     <SceneBoundary key={modelUrl} fallback={fallback}>
-      <div className="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-950" style={{ height }}>
+      <div ref={viewerRef} tabIndex={0} data-hotkey-scope="viewer" onKeyDown={handleViewerKeyDown} onPointerDown={(event) => { if (event.target instanceof HTMLCanvasElement) viewerRef.current?.focus({ preventScroll: true }); }} className="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-950 outline-none focus-visible:ring-2 focus-visible:ring-emerald-700" style={{ height }}>
         {!ready && <div className="absolute inset-0">
           <Image loading="eager" src={posterUrl} alt="Vertica condominium exterior artist visualization" fill sizes="(max-width: 1024px) 100vw, 70vw" className="object-cover opacity-70" />
           <div className="absolute inset-0 bg-neutral-950/35" />

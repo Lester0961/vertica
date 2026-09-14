@@ -65,7 +65,7 @@ export function LandingHero({ availability }: { availability: ReactNode }) {
         <p className={styles.heroLead}>
           Considered residences, live availability, and a clearer way to find your place.
         </p>
-        <div className={styles.heroActions}>
+        <div className={styles.heroActions} role="group" aria-label="Start exploring Vertica">
           <Link className={styles.buttonLight} href="/units">
             Explore residences <span aria-hidden>→</span>
           </Link>

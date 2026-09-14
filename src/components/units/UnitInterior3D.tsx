@@ -296,7 +296,7 @@ export function UnitInterior3D({ unit, height = 380 }: { unit: InteriorUnitInput
   const furnishingLabel = unit.furnishing === "UNFURNISHED" ? "bare" : unit.furnishing === "FURNISHED" ? "fully furnished" : "semi-furnished";
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
+    <div data-hotkey-scope="viewer" className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
       <div
         ref={hostRef}
         tabIndex={mode === "walk" ? 0 : -1}

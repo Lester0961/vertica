@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./auth.module.css";
+import { NavigationShortcuts, PUBLIC_SHORTCUTS } from "@/components/navigation/NavigationShortcuts";
 
 export default function AuthLayout({
   children,
@@ -37,6 +38,7 @@ export default function AuthLayout({
           <Link href="/" className={styles.panelBrand} aria-label="Vertica home">
             <span>VERTICA</span><i aria-hidden />
           </Link>
+          <NavigationShortcuts items={PUBLIC_SHORTCUTS} />
           <Link href="/">Return to residences</Link>
         </div>
         <div className={styles.formStage}>

@@ -8,8 +8,9 @@ export default function PublicLayout({
 }) {
   return (
     <div className="public-layout" style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <PublicHeader />
-      <div style={{ flex: 1 }}>{children}</div>
+      <div id="main-content" style={{ flex: 1 }}>{children}</div>
       <PublicFooter />
     </div>
   );

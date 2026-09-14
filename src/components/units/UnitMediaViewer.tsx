@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { UnitDetail } from "@/features/units/queries";
 import dynamic from "next/dynamic";
+import { getUnitImage } from "@/features/units/unitImages";
 import { Unit204FloorPlan } from "./Unit204FloorPlan";
 const ResidenceViewer = dynamic(() => import("./three/ResidenceViewer"), { ssr: false, loading: () => <div className="flex h-[400px] items-center justify-center rounded-xl bg-neutral-100" role="status">Preparing your residence…</div> });
 
@@ -11,6 +12,12 @@ type MediaMode = "photo" | "three" | "plan";
 
 export function UnitMediaViewer({ unit }: { unit: UnitDetail }) {
   const [mode, setMode] = useState<MediaMode>(unit.publicLabel === "Unit 204" ? "plan" : "three");
+  const image = getUnitImage({
+    publicLabel: unit.publicLabel,
+    unitTypeCode: unit.unitTypeCode,
+    unitTypeName: unit.unitTypeName,
+    floorNumber: unit.floorNumber,
+  });
 
   return (
     <section aria-label={`${unit.publicLabel} media`}>
@@ -48,8 +55,8 @@ export function UnitMediaViewer({ unit }: { unit: UnitDetail }) {
         {mode === "plan" ? <Unit204FloorPlan /> : mode === "photo" ? (
           <div className="relative h-[430px] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
             <Image
-              src="/images/vertica/vertica-residence.webp"
-              alt="Fictional Vertica residence artist visualization"
+              src={image.src}
+              alt={image.alt}
               fill
               priority
               sizes="(max-width: 1024px) 100vw, 896px"

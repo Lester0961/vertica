@@ -49,6 +49,7 @@ export interface Building3DProps {
 
 export function Building3D({ units, layout, selectedId, filters, onSelect, height = 520, showLegend = true }: Building3DProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
   const selectRef = useRef(onSelect);
   useEffect(() => {
     selectRef.current = onSelect;
@@ -65,6 +66,11 @@ export function Building3D({ units, layout, selectedId, filters, onSelect, heigh
 
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [exploded, setExploded] = useState(false);
+  const handleViewerKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.target instanceof HTMLButtonElement) return;
+    if (event.key.toLowerCase() === "e") { event.preventDefault(); setExploded((value) => !value); }
+    else if (event.key.toLowerCase() === "r") { event.preventDefault(); setExploded(false); if (ctx && plan.floors.length > 0) ctx.rig.flyTo(defaultView(plan.floors.length).position, defaultView(plan.floors.length).target, 800); }
+  };
 
   // Rebuild only when the underlying plan data changes, not on every render.
   const planKey = useMemo(
@@ -497,7 +503,7 @@ export function Building3D({ units, layout, selectedId, filters, onSelect, heigh
   }, [units]);
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100">
+    <div ref={viewerRef} tabIndex={0} data-hotkey-scope="viewer" onKeyDown={handleViewerKeyDown} onPointerDown={(event) => { if (event.target instanceof HTMLCanvasElement) viewerRef.current?.focus({ preventScroll: true }); }} className="relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 outline-none focus-visible:ring-2 focus-visible:ring-emerald-700">
       <div
         ref={hostRef}
         tabIndex={0}

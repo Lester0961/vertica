@@ -70,6 +70,7 @@ function RoomScene({plan,walk,stop,reset,balcony,furnishing}:{plan:FloorPlan;wal
 }
 
 export default function ResidenceViewer({unit}:{unit:InteriorUnitInput}) {
+  const viewerRef = useRef<HTMLDivElement>(null);
   const [walk,setWalk] = useState(false);
   const [stopIndex,setStopIndex] = useState(0);
   const [reset,setReset] = useState(0);
@@ -90,15 +91,24 @@ export default function ResidenceViewer({unit}:{unit:InteriorUnitInput}) {
     return ()=>{document.body.style.overflow=previous;window.removeEventListener("keydown",escape);};
   },[expanded]);
   const button = "min-h-11 rounded-lg px-4 py-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700";
-  return <div className={expanded?"fixed inset-0 z-50 flex flex-col overflow-auto bg-white p-3 sm:p-6":"overflow-hidden rounded-2xl border border-neutral-200 bg-white"}>
+  const handleViewerKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
+    const key = event.key.toLowerCase();
+    if (key === "1") { event.preventDefault(); setWalk(false); }
+    else if (key === "2") { event.preventDefault(); setWalk(true); }
+    else if (key === "r") { event.preventDefault(); setReset(value=>value+1); }
+    else if (key === "e") { event.preventDefault(); setExpanded(value=>!value); }
+    else return;
+  };
+  return <div ref={viewerRef} tabIndex={0} data-hotkey-scope="viewer" onKeyDown={handleViewerKeyDown} onPointerDown={(event)=>{if(event.target instanceof HTMLCanvasElement) viewerRef.current?.focus({preventScroll:true});}} className={expanded?"fixed inset-0 z-50 flex flex-col overflow-auto bg-white p-3 outline-none sm:p-6":"overflow-hidden rounded-2xl border border-neutral-200 bg-white outline-none focus-visible:ring-2 focus-visible:ring-emerald-700"}>
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 p-3">
       <div className="flex gap-1 rounded-xl bg-neutral-100 p-1" aria-label="Viewing perspective">
-        <button className={`${button} ${!walk?"bg-emerald-800 text-white":"text-neutral-700"}`} aria-pressed={!walk} onClick={()=>setWalk(false)}>Dollhouse</button>
-        <button className={`${button} ${walk?"bg-emerald-800 text-white":"text-neutral-700"}`} aria-pressed={walk} onClick={()=>setWalk(true)}>Walkthrough</button>
+        <button className={`${button} ${!walk?"bg-emerald-800 text-white":"text-neutral-700"}`} aria-pressed={!walk} aria-keyshortcuts="1" onClick={()=>setWalk(false)}>Dollhouse</button>
+        <button className={`${button} ${walk?"bg-emerald-800 text-white":"text-neutral-700"}`} aria-pressed={walk} aria-keyshortcuts="2" onClick={()=>setWalk(true)}>Walkthrough</button>
       </div>
       <div className="flex gap-1">
-        <button className={`${button} text-neutral-600 hover:bg-neutral-100`} onClick={()=>setReset(value=>value+1)}>Reset view</button>
-        <button className={`${button} text-neutral-600 hover:bg-neutral-100`} aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}>{expanded?"Close expanded view":"Expand"}</button>
+        <button className={`${button} text-neutral-600 hover:bg-neutral-100`} aria-keyshortcuts="R" onClick={()=>setReset(value=>value+1)}>Reset view</button>
+        <button className={`${button} text-neutral-600 hover:bg-neutral-100`} aria-keyshortcuts="E" aria-expanded={expanded} onClick={()=>setExpanded(value=>!value)}>{expanded?"Close expanded view":"Expand"}</button>
       </div>
     </div>
     <div className={expanded?"min-h-[300px] flex-1":"h-[400px] sm:h-[540px]"} style={{touchAction:"none"}}>
@@ -109,8 +119,12 @@ export default function ResidenceViewer({unit}:{unit:InteriorUnitInput}) {
       </SceneBoundary>
     </div>
     <div className="space-y-3 border-t border-neutral-200 bg-white p-4">
-      <p className="text-sm text-neutral-600">{walk?"Choose a room, then drag to look around from eye level.":"Drag to rotate. Scroll or pinch to zoom. Open Walkthrough to step inside."}</p>
+      <p className="text-sm text-neutral-600">{walk?"Choose a room, then drag to look around from eye level.":"Drag to rotate. Scroll or pinch to zoom. Open Walkthrough to step inside."} <span className="hidden text-xs text-neutral-400 sm:inline">Keys: 1 / 2 / R / E</span></p>
       {walk && <div className="flex flex-wrap gap-2" aria-label="Walkthrough rooms">{stops.map((stop,index)=><button key={stop.name} aria-pressed={stopIndex===index} onClick={()=>{setStopIndex(index);setReset(value=>value+1);}} className={`${button} ${stopIndex===index?"bg-emerald-800 text-white":"bg-neutral-100 text-neutral-700"}`}>{stop.name}</button>)}</div>}
+      {walk && <div className="flex gap-2 sm:hidden">
+        <button type="button" className={`${button} flex-1 bg-neutral-100 text-neutral-700`} onClick={()=>{setStopIndex(index=>index<=0?stops.length-1:index-1);setReset(value=>value+1);}}>← Previous room</button>
+        <button type="button" className={`${button} flex-1 bg-neutral-100 text-neutral-700`} onClick={()=>{setStopIndex(index=>(index+1)%stops.length);setReset(value=>value+1);}}>Next room →</button>
+      </div>}
       <p className="text-xs leading-relaxed text-neutral-500">Illustrative furnished layout. Furniture and room arrangement are for visualization; refer to the listing for included furnishings.</p>
     </div>
   </div>;

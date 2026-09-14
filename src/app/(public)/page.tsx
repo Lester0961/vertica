@@ -8,6 +8,7 @@ import {
   getUnitTypes,
 } from "@/features/property/queries";
 import { formatPeso } from "@/lib/utils/format";
+import { getUnitImage } from "@/features/units/unitImages";
 import { LandingHero } from "./LandingHero";
 import styles from "./landing.module.css";
 
@@ -276,6 +277,8 @@ function FeaturedInventory({ units }: { units: FeaturedUnit[] }) {
 
   if (!primary) return null;
 
+  const primaryImage = getUnitImage({ publicLabel: primary.publicLabel, unitTypeName: primary.unitTypeName });
+
   return (
     <div className={styles.inventoryGrid}>
       <Link
@@ -285,8 +288,8 @@ function FeaturedInventory({ units }: { units: FeaturedUnit[] }) {
       >
         <div className={styles.unitImage}>
           <Image
-            src="/images/vertica/vertica-residence.webp"
-            alt={`Artist visualization for ${primary.publicLabel}`}
+            src={primaryImage.src}
+            alt={primaryImage.alt}
             fill
             sizes="(max-width: 760px) 100vw, 58vw"
           />
@@ -307,32 +310,37 @@ function FeaturedInventory({ units }: { units: FeaturedUnit[] }) {
       </Link>
 
       <div className={styles.secondaryUnits}>
-        {secondary.map((unit, index) => (
-          <Link
-            className={styles.secondaryUnit}
-            href={`/units/${encodeURIComponent(unit.publicLabel)}`}
-            key={unit.id}
-            data-reveal
-          >
-            <div className={`${styles.unitCrop} ${index === 1 ? styles.unitCropRight : ""}`}>
-              <Image
-                src="/images/vertica/vertica-residence.webp"
-                alt=""
-                fill
-                sizes="(max-width: 760px) 32vw, 16vw"
-              />
-            </div>
-            <div className={styles.secondaryUnitCopy}>
-              <span>{index === 0 ? "Best space value" : "Earliest move-in"}</span>
-              <h3>{unit.publicLabel}</h3>
-              <p>{unit.unitTypeName} · {unit.areaSqm.toLocaleString("en-PH")} m²</p>
-              <strong>{formatPeso(unit.monthlyRent)} / month</strong>
-            </div>
-            <span className={styles.unitArrow} aria-hidden>→</span>
-          </Link>
-        ))}
+        {secondary.map((unit, index) => <FeaturedSecondaryUnit key={unit.id} unit={unit} index={index} />)}
       </div>
     </div>
+  );
+}
+
+function FeaturedSecondaryUnit({ unit, index }: { unit: FeaturedUnit; index: number }) {
+  const image = getUnitImage({ publicLabel: unit.publicLabel, unitTypeName: unit.unitTypeName });
+
+  return (
+    <Link
+      className={styles.secondaryUnit}
+      href={`/units/${encodeURIComponent(unit.publicLabel)}`}
+      data-reveal
+    >
+      <div className={`${styles.unitCrop} ${index === 1 ? styles.unitCropRight : ""}`}>
+        <Image
+          src={image.src}
+          alt={image.alt}
+          fill
+          sizes="(max-width: 760px) 32vw, 16vw"
+        />
+      </div>
+      <div className={styles.secondaryUnitCopy}>
+        <span>{index === 0 ? "Best space value" : "Earliest move-in"}</span>
+        <h3>{unit.publicLabel}</h3>
+        <p>{unit.unitTypeName} · {unit.areaSqm.toLocaleString("en-PH")} m²</p>
+        <strong>{formatPeso(unit.monthlyRent)} / month</strong>
+      </div>
+      <span className={styles.unitArrow} aria-hidden>→</span>
+    </Link>
   );
 }
 
