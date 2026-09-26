@@ -43,6 +43,11 @@ yarn-error.log*
 # docs (internal)
 /docs
 VERIFY.md
+/VERTICA_UI_UX_LOGIC_AUDIT.md
+
+# local development helper files
+/AGENTS.md
+/CLAUDE.md
 
 # temp files
 *.tmp
