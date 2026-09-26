@@ -3,8 +3,8 @@
  * their profile + role rows. Requires a running local Supabase and the
  * service-role key in the environment.
  *
- * Usage:
- *   SUPABASE_SERVICE_ROLE_KEY=... NEXT_PUBLIC_SUPABASE_URL=... npm run seed:users
+ * Set DEMO_PASSWORD to a unique value of at least 16 characters before use.
+ * Remote Supabase targets are blocked unless ALLOW_REMOTE_DEMO_SEED=true.
  *
  * All accounts are SYNTHETIC demo data. Never run against production.
  */
@@ -24,29 +24,54 @@ interface DemoUser {
   role: Role;
 }
 
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? "Vertica!Demo123";
-
-const USERS: DemoUser[] = [
-  { email: "superadmin@vertica.local", password: DEMO_PASSWORD, displayName: "Super Admin", role: "SUPER_ADMIN" },
-  { email: "admin@vertica.local", password: DEMO_PASSWORD, displayName: "Property Admin", role: "PROPERTY_ADMIN" },
-  { email: "tenant@vertica.local", password: DEMO_PASSWORD, displayName: "Demo Tenant", role: "TENANT" },
-  { email: "guard@vertica.local", password: DEMO_PASSWORD, displayName: "Demo Guard", role: "GUARD" },
-  { email: "maintenance@vertica.local", password: DEMO_PASSWORD, displayName: "Demo Maintenance", role: "MAINTENANCE" },
-];
+function isLoopbackHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1";
+}
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const demoPassword = process.env.DEMO_PASSWORD;
   if (!url || !key) {
     console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.");
     process.exit(1);
   }
+  if (!demoPassword || demoPassword.length < 16) {
+    console.error("Set DEMO_PASSWORD to a unique value of at least 16 characters.");
+    process.exit(1);
+  }
+
+  let target: URL;
+  try {
+    target = new URL(url);
+  } catch {
+    console.error("NEXT_PUBLIC_SUPABASE_URL must be a valid URL.");
+    process.exit(1);
+  }
+  if (
+    !isLoopbackHostname(target.hostname) &&
+    process.env.ALLOW_REMOTE_DEMO_SEED !== "true"
+  ) {
+    console.error(
+      `Refusing to seed non-local Supabase host "${target.hostname}". Use a local instance; remote seeding requires explicit ALLOW_REMOTE_DEMO_SEED=true and must never target production.`,
+    );
+    process.exit(1);
+  }
+
+  const users: DemoUser[] = [
+    { email: "superadmin@vertica.local", password: demoPassword, displayName: "Super Admin", role: "SUPER_ADMIN" },
+    { email: "admin@vertica.local", password: demoPassword, displayName: "Property Admin", role: "PROPERTY_ADMIN" },
+    { email: "tenant@vertica.local", password: demoPassword, displayName: "Demo Tenant", role: "TENANT" },
+    { email: "guard@vertica.local", password: demoPassword, displayName: "Demo Guard", role: "GUARD" },
+    { email: "maintenance@vertica.local", password: demoPassword, displayName: "Demo Maintenance", role: "MAINTENANCE" },
+  ];
 
   const admin = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  for (const u of USERS) {
+  for (const u of users) {
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email: u.email,
       password: u.password,
@@ -118,8 +143,7 @@ async function main() {
     console.log(`Seeded ${u.role.padEnd(15)} ${u.email}`);
   }
 
-  console.log(`\nDemo password: ${DEMO_PASSWORD}`);
-  console.log("Done.");
+  console.log("Done. The demo password was not printed.");
 }
 
 main().catch((e) => {

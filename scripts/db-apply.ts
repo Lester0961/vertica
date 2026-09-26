@@ -57,6 +57,23 @@ async function main() {
   const seed = process.argv.includes("--seed");
   const only = process.argv.find((arg) => arg.startsWith("--only="))?.slice("--only=".length);
 
+  if (reset) {
+    let hostname: string;
+    try {
+      hostname = new URL(conn).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    } catch {
+      console.error("[db-apply] Refusing --reset because the database URL is invalid.");
+      process.exit(1);
+    }
+    const isLoopback = ["localhost", "127.0.0.1", "::1"].includes(hostname);
+    if (!isLoopback && process.env.ALLOW_REMOTE_DB_RESET !== "true") {
+      console.error(
+        `[db-apply] Refusing destructive --reset for non-local host "${hostname}". Use a local database; remote resets require explicit ALLOW_REMOTE_DB_RESET=true and must never target production.`,
+      );
+      process.exit(1);
+    }
+  }
+
   const client = new Client({
     connectionString: conn,
     ssl: { rejectUnauthorized: false },
