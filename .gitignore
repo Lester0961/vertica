@@ -40,14 +40,11 @@ yarn-debug.log*
 yarn-error.log*
 *.tsbuildinfo
 
-# docs (internal)
+# Keep only the public root documentation
 /docs
-VERIFY.md
-/VERTICA_UI_UX_LOGIC_AUDIT.md
-
-# local development helper files
-/AGENTS.md
-/CLAUDE.md
+/*.md
+!/README.md
+!/CONTRIBUTING.md
 
 # temp files
 *.tmp
@@ -55,3 +52,10 @@ leasetest.tmp.cjs
 
 /.vercel/
 /artifacts/
+
+# Legacy V1 media retained locally
+/public/models/vertica/v1/building/vertica-building.glb
+/public/models/vertica/v1/textures/fabric.svg
+/public/models/vertica/v1/textures/stone.svg
+/public/models/vertica/v1/textures/wall.svg
+/public/models/vertica/v1/textures/wood.svg
